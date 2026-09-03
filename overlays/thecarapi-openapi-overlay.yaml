@@ -1,0 +1,181 @@
+# generated: '2026-09-01'
+# method: derived
+# source: openapi/thecarapi-openapi.json + https://thecarapi.com/docs
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for TheCarApi
+  version: 1.0.0
+extends: ../openapi/thecarapi-openapi.json
+x-provenance:
+  generated: '2026-09-01'
+  method: derived
+  source:
+    - openapi/thecarapi-openapi.json
+    - https://thecarapi.com/docs/errors
+    - https://thecarapi.com/docs/conventions
+    - https://thecarapi.com/docs/authentication
+  note: >-
+    Non-destructive enhancements only. The original document at openapi/thecarapi-openapi.json is
+    never mutated. Everything added here is transcribed from TheCarApi's own published
+    documentation; nothing is invented. The three response codes added below (409, 413, 503) are
+    documented on https://thecarapi.com/docs/errors but absent from the published spec, which is
+    the single largest machine-readable gap in an otherwise complete contract.
+actions:
+  - target: $.info
+    description: Record the artifact set this contract was enriched with and the runtime schema source.
+    update:
+      x-apis-io-artifacts:
+        conventions: conventions/thecarapi-conventions.yml
+        errors: errors/thecarapi-problem-types.yml
+        authentication: authentication/thecarapi-authentication.yml
+        scopes: scopes/thecarapi-scopes.yml
+        rate_limits: rate-limits/thecarapi-rate-limits.yml
+        lifecycle: lifecycle/thecarapi-lifecycle.yml
+        changelog: changelog/thecarapi-changelog.yml
+        data_model: data-model/thecarapi-data-model.yml
+        plans: plans/thecarapi-plans-pricing.yml
+      x-runtime-schema-source:
+        operationId: get_api_contract
+        path: /api/contract
+        field: schemas
+        note: >-
+          The published document declares no components.schemas. GET /api/contract returns the
+          authoritative required/optional key list per response shape at runtime; the provider
+          instructs clients to gate on it rather than on the contract version string.
+      x-contract-version: '2026-08-19'
+  - target: $.components.responses
+    description: >-
+      Add the four status codes TheCarApi documents on its errors page but does not declare in the
+      published spec.
+    update:
+      Conflict:
+        description: Ambiguous legacy identifier. Disambiguate with the `site` parameter.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  enum: [false]
+                error:
+                  type: string
+      PayloadTooLarge:
+        description: Request body over 50 MB. Only reachable on the POST routes.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  enum: [false]
+                error:
+                  type: string
+      InternalServerError:
+        description: Unexpected server error; the message is sanitized. Retry with backoff.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  enum: [false]
+                error:
+                  type: string
+      ServiceUnavailable:
+        description: >-
+          A dependency is unavailable, a search or facet query exceeded its safety timeout, a
+          dataset has not been built yet, or authentication could not be verified. Retry with
+          backoff; a 503 from a deep filtered search is asking the caller to narrow the filter.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  enum: [false]
+                error:
+                  type: string
+  - target: $.components
+    description: Declare the runtime response headers the API returns, which the published spec omits entirely.
+    update:
+      headers:
+        XRequestID:
+          description: Correlation id, echoed from a client-supplied value of up to 80 characters. Present on every response.
+          schema:
+            type: string
+        XCache:
+          description: Cache disposition on read routes.
+          schema:
+            type: string
+            enum: [HIT, MISS, STALE]
+        ETag:
+          description: Weak entity tag. Echo back in If-None-Match for a 304. Compare as an opaque string.
+          schema:
+            type: string
+        XRateLimitRemaining:
+          description: >-
+            Headroom left in the tightest configured quota window. Absent entirely on a key issued
+            with no quota, which means unlimited rather than exhausted.
+          schema:
+            type: integer
+        RetryAfter:
+          description: Seconds to wait. Sent on 429 and honoured in preference to any client-side backoff schedule.
+          schema:
+            type: integer
+        XLivePrice:
+          description: '"pending" when a live-price refresh missed the request budget.'
+          schema:
+            type: string
+  - target: $.paths./api/health/live.get
+    description: Correct the security declaration — this probe is documented as requiring no API key.
+    update:
+      security: []
+      x-auth-required: false
+  - target: $.paths./api/health/ready.get
+    description: Correct the security declaration — this probe is documented as requiring no API key.
+    update:
+      security: []
+      x-auth-required: false
+  - target: $.paths./api/search.get
+    description: Attach the documented conditional-request and depth semantics to the primary search operation.
+    update:
+      x-conditional-requests:
+        etag: true
+        strength: weak
+        request_header: If-None-Match
+        response: 304 Not Modified with no body
+      x-depth-policy:
+        offset_cap: null
+        note: No offset cap. A very deep filtered search may return 503 asking the caller to narrow it. Pages past offset 5000 are not cached.
+      x-cache-ttl-seconds: 300
+  - target: $.paths./api/facets.get
+    description: Record the quota accounting the provider publishes for the combined facet endpoint.
+    update:
+      x-quota-cost: 1
+      x-quota-note: >-
+        Bills one request against quota however many dimensions are requested, versus six for the
+        per-dimension endpoints. The provider names this the cheapest way to build a filter sidebar.
+      x-cache-ttl-seconds: 600
+  - target: $.paths./api/car-details
+    description: Flag that the POST variant is a query, not a mutation — the whole API is read-only.
+    update:
+      x-read-only: true
+      x-mutation: false
+      x-note: >-
+        POST is used here because the parameter set is too large for a query string. It creates
+        nothing and changes no provider-side state, so it is safe to repeat.
+  - target: $.paths./api/listVehicles
+    description: Flag that the POST variant is a query, not a mutation.
+    update:
+      x-read-only: true
+      x-mutation: false
+  - target: $.paths./api/calculator/calculate.post
+    description: Flag the calculator as a pure function.
+    update:
+      x-read-only: true
+      x-mutation: false
+      x-note: Returns an arithmetic estimate and stores nothing. These are estimates, not a binding quote.

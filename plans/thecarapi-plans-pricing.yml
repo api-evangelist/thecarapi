@@ -1,0 +1,79 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/pricing
+docs: https://thecarapi.com/pricing
+currency: EUR
+model: >-
+  One flat paid plan with no feature gating — the published position is "One plan. Unlimited
+  access." Plans differ only by monthly request volume, not by which endpoints they unlock. A free
+  evaluation key and a custom/enterprise track sit either side of it.
+plan_count: 3
+plans:
+  - name: Test
+    slug: test
+    label: Free · demo & showcase
+    price: 0
+    currency: EUR
+    billing_period: null
+    self_serve: false
+    signup: https://thecarapi.com/contact
+    included_quota: null
+    quota_note: '"Limited requests for evaluation" — no numeric allowance is published.'
+    features:
+      - Real endpoints (search, detail, images)
+      - Full API surface for evaluation via a temporary key
+      - Ideal for demos, investor showcases and proofs-of-concept
+      - No card required
+    overage: null
+    note: Issued on request through the contact form; there is no self-serve signup.
+  - name: Unlimited
+    slug: unlimited
+    price: 250
+    currency: EUR
+    billing_period: month
+    self_serve: false
+    signup: https://thecarapi.com/contact
+    included_quota:
+      requests: 200000
+      period: month
+    features:
+      - Full API access — search, detail, images, catalog, SEO, archive
+      - 'All sources: Auto1, OpenLane, Schadeautos, Copart DE, eCarsTrade, Encar, Japanese Auctions'
+      - European retail classifieds feed & facets
+      - CDN image galleries, facets & catalog
+      - Encar historical access where available
+      - Priority email support
+    overage: null
+    overage_note: No overage rate is published; the page states the plan is "up to 200,000 requests a month".
+    note: >-
+      "The plan unlocks every endpoint, up to 200,000 requests a month — nothing is held back
+      behind a higher tier." Note that some routes (VIN history, the market snapshots,
+      /api/listVehicles, /api/search/auction-ids) are nonetheless off by default on a new key and
+      granted on request — see scopes/thecarapi-scopes.yml.
+  - name: Custom
+    slug: custom
+    price: null
+    currency: EUR
+    billing_period: null
+    self_serve: false
+    signup: https://thecarapi.com/contact
+    included_quota: null
+    features:
+      - Bulk exports
+      - Dedicated infrastructure
+      - Custom corridors
+      - SLAs
+      - On-premise delivery
+    note: Scoped on request. No published price.
+metering:
+  unit: API request
+  discounts:
+    - endpoint: /api/facets
+      note: Bills one quota unit regardless of how many facet dimensions are requested.
+    - endpoints:
+        - /api/health/live
+        - /api/health/ready
+      note: Unauthenticated and consume no quota.
+notes:
+  - No public self-serve checkout was found; every tier routes through https://thecarapi.com/contact.
+  - No published free-forever tier — the free tier is a time/volume-limited evaluation key.

@@ -1,0 +1,943 @@
+generated: '2026-09-01'
+method: derived
+source: openapi/thecarapi-openapi.json
+note: Extracted verbatim from the provider's own published OpenAPI 3.1 document. Every one of the 39 operations
+  carries an x-examples array of complete example requests and a 200 response example on application/json;
+  both are transcribed here unchanged. Nothing is authored. The example values (auction id 38112900 on
+  encar, cdn.example thumbnails) are the provider's own illustrations, not guaranteed-resolvable fixtures.
+operation_count: 39
+operations_with_request_examples: 39
+operations_with_response_examples: 39
+examples:
+- operationId: get_api_search
+  method: GET
+  path: /api/search
+  summary: Primary filtered search over live auction inventory.
+  tags:
+  - Search & discovery
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/search?brand=bmw&fuel=Diesel&year_from=2018&sort=price_low&limit=24
+  - GET https://api.thecarapi.com/api/search?site=encar&country=KR&buy_now=true&page=2&page_size=20
+  response_example_200:
+    success: true
+    results:
+    - auction_id: 38112900
+      site_name: encar
+      clean_make: BMW
+      clean_model: 320d
+      registration_year: 2020
+      mileage: 45000
+      public_price_eur: 21500
+      thumbnail_url: https://cdn.example/photo.webp
+    total: 18342
+    limit: 24
+    offset: 0
+    count_only: false
+    page: 1
+    page_size: 24
+    total_pages: 764
+    max_page: 764
+    secret_mode: false
+    contract_version: '2026-08-19'
+- operationId: get_api_search_auction_ids
+  method: GET
+  path: /api/search/auction-ids
+  summary: Resolve a free-text query to matching auction ids only.
+  tags:
+  - Search & discovery
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/search/auction-ids?q=bmw%20320d
+  - GET https://api.thecarapi.com/api/search/auction-ids?q=kia%20ev6
+  response_example_200:
+    success: true
+    auction_ids:
+    - 38112900
+    - 11409652
+    found: 2
+- operationId: get_api_facets
+  method: GET
+  path: /api/facets
+  summary: Every flat facet dimension in one request instead of six.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/facets?fields=brands,fuels,gearboxes&country=DE
+  - GET https://api.thecarapi.com/api/facets?fields=brands,years,sites&damaged=true
+  response_example_200:
+    success: true
+    brands:
+    - id: 12
+      name: BMW
+      slug: bmw
+      count: 3266
+    fuels:
+    - Diesel
+    - Petrol
+    gearboxes:
+    - Automatic
+    - Manual
+- operationId: get_api_brands
+  method: GET
+  path: /api/brands
+  summary: List brands with round-trippable slugs and live inventory counts.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/brands?search=bm&ordering=-count&limit=20
+  - GET https://api.thecarapi.com/api/brands?country=DE&damaged=true
+  response_example_200:
+    success: true
+    brands:
+    - id: 12
+      name: BMW
+      slug: bmw
+      count: 1543
+- operationId: get_api_models
+  method: GET
+  path: /api/models
+  summary: List models for one brand with live inventory counts.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/models?brand=bmw&ordering=-count
+  - GET https://api.thecarapi.com/api/models?brand=12&search=x&country=DE
+  response_example_200:
+    success: true
+    models:
+    - name: 320d
+      slug: 320d
+      count: 210
+- operationId: get_api_years
+  method: GET
+  path: /api/years
+  summary: List registration years available in current inventory.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/years?country=DE
+  - GET https://api.thecarapi.com/api/years?damaged=true&buy_now=true
+  response_example_200:
+    success: true
+    years:
+    - 2024
+    - 2023
+    - 2022
+    - 2021
+    year_counts:
+    - value: 2024
+      count: 512
+    - value: 2023
+      count: 4127
+    - value: 2022
+      count: 3890
+    - value: 2021
+      count: 3544
+- operationId: get_api_fuels
+  method: GET
+  path: /api/fuels
+  summary: List canonical fuel groups available in current inventory.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/fuels?country=DE
+  - GET https://api.thecarapi.com/api/fuels?buy_now=true
+  response_example_200:
+    success: true
+    fuels:
+    - Diesel
+    - Electric
+    - Hybrid
+    - Mild Hybrid
+    - Petrol
+    - Plug-in Hybrid
+    fuel_counts:
+    - value: Diesel
+      count: 18342
+    - value: Electric
+      count: 903
+    - value: Hybrid
+      count: 2211
+    - value: Mild Hybrid
+      count: 5107
+    - value: Petrol
+      count: 24980
+    - value: Plug-in Hybrid
+      count: 1489
+- operationId: get_api_gearboxes
+  method: GET
+  path: /api/gearboxes
+  summary: List canonical gearbox groups available in current inventory.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/gearboxes?country=KR
+  - GET https://api.thecarapi.com/api/gearboxes?damaged=true
+  response_example_200:
+    success: true
+    gearboxes:
+    - Automatic
+    - Manual
+    gearbox_counts:
+    - value: Automatic
+      count: 22190
+    - value: Manual
+      count: 15432
+- operationId: get_api_countries
+  method: GET
+  path: /api/countries
+  summary: List vehicle-location countries and display names.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/countries?buy_now=true
+  - GET https://api.thecarapi.com/api/countries?damaged=true
+  response_example_200:
+    success: true
+    countries:
+    - DE
+    - JP
+    - KR
+    - NL
+    country_details:
+    - code: DE
+      name: Germany
+    - code: JP
+      name: Japan
+    - code: KR
+      name: South Korea
+    - code: NL
+      name: Netherlands
+    country_counts:
+    - value: DE
+      count: 9871
+    - value: JP
+      count: 14203
+    - value: KR
+      count: 8455
+    - value: NL
+      count: 3120
+- operationId: get_api_sites
+  method: GET
+  path: /api/sites
+  summary: List auction source slugs with live inventory counts.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/api/sites?buy_now=true
+  - GET https://api.thecarapi.com/api/sites?damaged=true
+  response_example_200:
+    success: true
+    sites:
+    - id: 1
+      name: encar
+      count: 9021
+    - id: 2
+      name: openlane
+      count: 4110
+    - id: 3
+      name: ecarstrade
+      count: 3187
+    - id: 4
+      name: japanauction
+      count: 1642
+- operationId: get_load_models
+  method: GET
+  path: /load-models
+  summary: Return the complete model catalog grouped by brand.
+  tags:
+  - Filter facets
+  scope: search
+  request_examples:
+  - GET https://api.thecarapi.com/load-models?country=DE
+  - GET https://api.thecarapi.com/load-models?buy_now=true&damaged=false
+  response_example_200:
+    BMW:
+    - text: 320d
+    - text: X5
+    Volvo:
+    - text: XC60
+- operationId: get_api_catalog_manufacturers
+  method: GET
+  path: /api/catalog/manufacturers
+  summary: Paginated manufacturer catalog with inventory counts.
+  tags:
+  - Catalog
+  scope: catalog
+  request_examples:
+  - GET https://api.thecarapi.com/api/catalog/manufacturers?country=DE&limit=20
+  - GET https://api.thecarapi.com/api/catalog/manufacturers?page=2&page_size=25
+  response_example_200:
+    success: true
+    results:
+    - slug: bmw
+      name: BMW
+      inventory_count: 1543
+      brand_id: 12
+    total: 96
+    limit: 50
+    offset: 0
+    total_pages: 2
+    max_page: 2
+- operationId: get_api_catalog_manufacturers_slug
+  method: GET
+  path: /api/catalog/manufacturers/{slug}
+  summary: Resolve one manufacturer by slug.
+  tags:
+  - Catalog
+  scope: catalog
+  request_examples:
+  - GET https://api.thecarapi.com/api/catalog/manufacturers/bmw
+  - GET https://api.thecarapi.com/api/catalog/manufacturers/bmw?country=DE
+  response_example_200:
+    success: true
+    manufacturer:
+      slug: bmw
+      name: BMW
+      inventory_count: 1543
+      brand_id: 12
+- operationId: get_api_catalog_manufacturers_stats
+  method: GET
+  path: /api/catalog/manufacturers/stats
+  summary: Return aggregate manufacturer statistics.
+  tags:
+  - Catalog
+  scope: catalog
+  request_examples:
+  - GET https://api.thecarapi.com/api/catalog/manufacturers/stats
+  - GET https://api.thecarapi.com/api/catalog/manufacturers/stats?country=DE
+  response_example_200:
+    success: true
+- operationId: get_api_catalog_model_groups
+  method: GET
+  path: /api/catalog/model-groups
+  summary: Paginated model groups for one manufacturer.
+  tags:
+  - Catalog
+  scope: catalog
+  request_examples:
+  - GET https://api.thecarapi.com/api/catalog/model-groups?manufacturer__slug=bmw&search=320
+  - GET https://api.thecarapi.com/api/catalog/model-groups?manufacturer__slug=bmw&country=DE&page=2&page_size=20
+  response_example_200:
+    success: true
+    results:
+    - slug: 320d
+      name: 320d
+      inventory_count: 210
+      manufacturer_slug: bmw
+    total: 34
+    limit: 50
+    offset: 0
+    total_pages: 1
+    max_page: 1
+- operationId: get_api_catalog_model_groups_slug
+  method: GET
+  path: /api/catalog/model-groups/{slug}
+  summary: Resolve one model group by slug.
+  tags:
+  - Catalog
+  scope: catalog
+  request_examples:
+  - GET https://api.thecarapi.com/api/catalog/model-groups/320d?manufacturer__slug=bmw
+  - GET https://api.thecarapi.com/api/catalog/model-groups/320d?manufacturer__slug=bmw&country=DE
+  response_example_200:
+    success: true
+    model_group:
+      slug: 320d
+      name: 320d
+      inventory_count: 210
+      manufacturer_slug: bmw
+- operationId: get_api_seo_popular_searches
+  method: GET
+  path: /api/seo/popular-searches
+  summary: List the most common live brand/model searches.
+  tags:
+  - SEO helpers
+  scope: seo
+  request_examples:
+  - GET https://api.thecarapi.com/api/seo/popular-searches
+  - GET https://api.thecarapi.com/api/seo/popular-searches?limit=50
+  response_example_200:
+    success: true
+    results:
+    - brand: BMW
+      model: 320d
+      brand_slug: bmw
+      model_slug: 320d
+      count: 210
+- operationId: get_api_seo_brand_model_from_slug
+  method: GET
+  path: /api/seo/brand-model-from-slug
+  summary: Resolve brand and model slugs to their canonical display names.
+  tags:
+  - SEO helpers
+  scope: seo
+  request_examples:
+  - GET https://api.thecarapi.com/api/seo/brand-model-from-slug?brand_slug=bmw&model_slug=320d
+  - GET https://api.thecarapi.com/api/seo/brand-model-from-slug?brand_slug=volvo&model_slug=xc60
+  response_example_200:
+    success: true
+    brand: BMW
+    model: 320d
+- operationId: get_api_auction_site_slug_auction_id
+  method: GET
+  path: /api/auction/{site_slug}/{auction_id}
+  summary: Canonical auction detail with private and bidder fields removed.
+  tags:
+  - Auctions & history
+  scope: auctions
+  request_examples:
+  - GET https://api.thecarapi.com/api/auction/encar/38112900
+  - GET https://api.thecarapi.com/api/auction/openlane/11125938
+  response_example_200:
+    success: true
+    auction:
+      auction_id: 11409652
+      site_name: openlane
+      clean_make: BMW
+      clean_model: 320d
+      model_display: 320d M Sport
+      registration_year: 2020
+      mileage: 45000
+      current_price: 25900
+      current_final: 33566
+      public_price_eur: 33926
+      auction_end_at: '2026-08-20T10:00:00Z'
+      images: []
+      vault_gallery:
+        images:
+        - served_url: /image-vault/ab/cd/openlane_11409652_00_deadbeef.avif
+          remote_url: https://cdn.example/photo_1.jpg
+          image_status: ready
+        count: 28
+        pending: 0
+      vehicle_details: {}
+      car_identification: {}
+      live_price:
+        price: 25900
+        currency: EUR
+        source: openlane
+        fetched_at: 1786659750
+- operationId: get_api_auction_site_slug_auction_id_price_history
+  method: GET
+  path: /api/auction/{site_slug}/{auction_id}/price-history
+  summary: Every recorded price movement for one listing, oldest first.
+  tags:
+  - Auctions & history
+  scope: auctions
+  request_examples:
+  - GET https://api.thecarapi.com/api/auction/encar/38112900/price-history
+  - GET https://api.thecarapi.com/api/auction/openlane/11125938/price-history
+  response_example_200:
+    success: true
+    site: encar
+    auction_id: 38112900
+    source_auction_id: '38112900'
+    history:
+    - event_type: initial
+      source_auction_id: '38112900'
+      changed_fields:
+      - current_price
+      - public_price_eur
+      current_price: 21500
+      buy_now_price: null
+      start_price: null
+      final_price: null
+      current_final: null
+      buynow_final: null
+      public_price_eur: 21500
+      currency_code_id: EUR
+      observed_at: '2026-07-10T08:00:00'
+      created_at: '2026-07-10T08:00:05'
+- operationId: get_api_auction_images_site_slug_auction_id
+  method: GET
+  path: /api/auction-images/{site_slug}/{auction_id}
+  summary: Ordered gallery metadata backed by the image vault. Usually unnecessary — the same body rides
+    on the auction detail response as vault_gallery.
+  tags:
+  - Auctions & history
+  scope: auctions
+  request_examples:
+  - GET https://api.thecarapi.com/api/auction-images/encar/38112900
+  - GET https://api.thecarapi.com/api/auction-images/openlane/11125938
+  response_example_200:
+    success: true
+    count: 1
+    pending: 12
+    images:
+    - url: https://cdn.example/photo_1.jpg
+      remote_url: https://cdn.example/photo_1.jpg
+      served_url: /image-vault/ab/cd/ecarstrade_7399555_00_deadbeef.avif
+      thumbnail: /image-vault/ab/cd/ecarstrade_7399555_00_deadbeef.avif
+      image_status: ready
+      image_source: downloaded
+      index: 0
+      is_primary: true
+      source_section: exterior
+      width: 1024
+      height: 768
+- operationId: get_api_vin_vin_history
+  method: GET
+  path: /api/vin/{vin}/history
+  summary: Look up a full VIN across current and archived auction records.
+  tags:
+  - Auctions & history
+  scope: auctions
+  request_examples:
+  - GET https://api.thecarapi.com/api/vin/WBA8E9G50GNU12345/history
+  - GET https://api.thecarapi.com/api/vin/KNAB3811ALT123456/history
+  response_example_200:
+    success: true
+    vin: WBA8E9G50GNU12345
+    match_count: 2
+    auctions:
+    - site_name: encar
+      auction_id: 38112900
+      clean_make: BMW
+      clean_model: 320d
+      mileage: 45000
+      public_price_eur: 21500
+      first_seen_at: '2026-06-01T00:00:00'
+      last_seen_at: '2026-07-10T00:00:00'
+      archived: false
+      source_auction_id: '38112900'
+- operationId: get_api_car_details
+  method: GET
+  path: /api/car-details
+  summary: Fetch full vehicle detail by source and listing identifier.
+  tags:
+  - Vehicle details
+  scope: details
+  request_examples:
+  - GET | POST https://api.thecarapi.com/api/car-details?site=encar&id=38112900
+  - "POST https://api.thecarapi.com/api/car-details\n{\n  \"site\": \"openlane\",\n  \"identifier\": \"\
+    11125938\",\n  \"search_id\": \"vehicle-page-42\"\n}"
+  response_example_200:
+    success: true
+    site: openlane
+    auction_id: 11409652
+    current_price: 25900
+    current_final: 33566
+    public_price_eur: 33926
+    vehicle_details: {}
+    auction:
+      extracted_fields:
+        images: []
+    live_price:
+      price: 25900
+      currency: EUR
+      source: openlane
+      fetched_at: 1786659750
+- operationId: post_api_car_details
+  method: POST
+  path: /api/car-details
+  summary: Fetch full vehicle detail by source and listing identifier.
+  tags:
+  - Vehicle details
+  scope: details
+  request_examples:
+  - GET | POST https://api.thecarapi.com/api/car-details?site=encar&id=38112900
+  - "POST https://api.thecarapi.com/api/car-details\n{\n  \"site\": \"openlane\",\n  \"identifier\": \"\
+    11125938\",\n  \"search_id\": \"vehicle-page-42\"\n}"
+  response_example_200:
+    success: true
+    site: openlane
+    auction_id: 11409652
+    current_price: 25900
+    current_final: 33566
+    public_price_eur: 33926
+    vehicle_details: {}
+    auction:
+      extracted_fields:
+        images: []
+    live_price:
+      price: 25900
+      currency: EUR
+      source: openlane
+      fetched_at: 1786659750
+- operationId: get_api_listVehicles
+  method: GET
+  path: /api/listVehicles
+  summary: Catalog-shaped listing feed — a compatibility alias for search.
+  tags:
+  - Vehicle details
+  scope: details
+  request_examples:
+  - GET | POST https://api.thecarapi.com/api/listVehicles?manufacturer_slug=bmw&model_group_slug=320d&max_mileage=120000
+  - GET | POST https://api.thecarapi.com/api/listVehicles?brand=audi&min_year=2019&ordering=price&limit=50
+  response_example_200:
+    success: true
+    vehicles: []
+    results: []
+    total: 210
+    limit: 50
+    offset: 0
+    total_pages: 5
+    max_page: 5
+- operationId: post_api_listVehicles
+  method: POST
+  path: /api/listVehicles
+  summary: Catalog-shaped listing feed — a compatibility alias for search.
+  tags:
+  - Vehicle details
+  scope: details
+  request_examples:
+  - GET | POST https://api.thecarapi.com/api/listVehicles?manufacturer_slug=bmw&model_group_slug=320d&max_mileage=120000
+  - GET | POST https://api.thecarapi.com/api/listVehicles?brand=audi&min_year=2019&ordering=price&limit=50
+  response_example_200:
+    success: true
+    vehicles: []
+    results: []
+    total: 210
+    limit: 50
+    offset: 0
+    total_pages: 5
+    max_page: 5
+- operationId: get_api_top_offers
+  method: GET
+  path: /api/top-offers
+  summary: Feed of auctions priced below their market reference, newest comparison first.
+  tags:
+  - Top offers
+  scope: top-offers
+  request_examples:
+  - GET https://api.thecarapi.com/api/top-offers?site=openlane&min_savings_pct=20&limit=24
+  - GET https://api.thecarapi.com/api/top-offers?brand=BMW&country=DE&sort=savings&page=2&page_size=20
+  response_example_200:
+    success: true
+    results:
+    - auction_id: 8842711
+      site_name: openlane
+      car_name_en: BMW 320d Touring
+      clean_make: BMW
+      clean_model: 3 Series
+      public_price_eur: 9000
+      is_top_offer: true
+      top_offer_savings: 2500
+      top_offer_savings_pct: 21.7
+      market_reference:
+        price_eur: 11500
+        mileage: 165000
+        km_difference: -15000
+        explanation: 'Rule: this car must save at least 1,800 EUR — ...'
+    total: 318
+    limit: 24
+    offset: 0
+    total_pages: 14
+- operationId: get_api_theparking_listings
+  method: GET
+  path: /api/theparking/listings
+  summary: Query retail classifieds aggregated from portals across Europe.
+  tags:
+  - European classifieds
+  scope: theparking
+  request_examples:
+  - GET https://api.thecarapi.com/api/theparking/listings?country=de,at&brand=BMW&price_to=15000
+  - GET https://api.thecarapi.com/api/theparking/listings?seller=dealer&source=mobile.de&sort=price_low&with_photo=true
+  - GET https://api.thecarapi.com/api/theparking/listings?country=de&source_exclude=mobile.de,kleinanzeigen.de&include_total=false
+  response_example_200:
+    success: true
+    listings:
+    - reference_id: tp-91744022
+      title: BMW 320d Touring
+      brand: BMW
+      model: 3 Series
+      engine: 320d
+      year: 2016
+      price_eur: 12500.5
+      mileage_km: 180000
+      fuel_norm: diesel
+      gearbox_norm: automatic
+      colour: black
+      doors: '5'
+      country: Germany
+      country_code: de
+      region: Bayern
+      seller_type: dealer
+      source_site: mobile.de
+      photo_count: 12
+      offer_url: https://www.theparking.eu/...
+      image_url: https://img.leparking.fr/...
+      published: '2026-07-30'
+      first_seen_at: '2026-07-30T04:11:02'
+      last_seen_at: '2026-08-05T04:09:55'
+    total: 4412
+    total_capped: false
+    total_unavailable: false
+    limit: 50
+    offset: 0
+    total_pages: 89
+- operationId: get_api_theparking_facets
+  method: GET
+  path: /api/theparking/facets
+  summary: Counted filter vocabulary for the classifieds dataset.
+  tags:
+  - European classifieds
+  scope: theparking
+  request_examples:
+  - GET https://api.thecarapi.com/api/theparking/facets
+  - GET https://api.thecarapi.com/api/theparking/facets?limit=0
+  - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/theparking/facets"'
+  response_example_200:
+    success: true
+    facets:
+      countries:
+      - value: de
+        count: 1840221
+      brands:
+      - value: BMW
+        count: 402118
+      fuels:
+      - value: diesel
+        count: 4110882
+      gearboxes:
+      - value: manual
+        count: 5233901
+      sellers:
+      - value: dealer
+        count: 8901233
+      sources:
+      - value: mobile.de
+        count: 913442
+      value_counts:
+        countries: 41
+        brands: 128
+        fuels: 7
+        gearboxes: 3
+        sellers: 2
+        sources: 683
+      totals:
+        total: 9714882
+        total_capped: false
+        price_min: 50
+        price_max: 4500000
+        year_min: 1920
+        year_max: 2027
+- operationId: get_api_theparking_models
+  method: GET
+  path: /api/theparking/models
+  summary: List models available for one or more brands.
+  tags:
+  - European classifieds
+  scope: theparking
+  request_examples:
+  - GET https://api.thecarapi.com/api/theparking/models?brand=BMW
+  - GET https://api.thecarapi.com/api/theparking/models?brand=BMW,Audi
+  response_example_200:
+    success: true
+    models:
+    - value: 3 Series
+      count: 8841
+    - value: 5 Series
+      count: 6002
+- operationId: get_api_cars_bg_market
+  method: GET
+  path: /api/cars-bg-market
+  summary: Cars.bg Bulgarian retail market snapshot.
+  tags:
+  - Market intelligence
+  scope: market
+  request_examples:
+  - GET https://api.thecarapi.com/api/cars-bg-market?brand=BMW&model=320d&year=2019
+  - GET https://api.thecarapi.com/api/cars-bg-market?make=Audi&model=A4&year=2020&flex=2
+  response_example_200:
+    success: true
+    snapshot:
+      brand_id: '12'
+      model_ids:
+      - '4411'
+      year_center: 2019
+      year_flex: 2
+      year_from: 2017
+      year_to: 2021
+      listing_count: 84
+      avg_price_eur: 24310.5
+      median_price_eur: 23900
+      min_price_eur: 15500
+      max_price_eur: 41000
+      offers: []
+      raw_matches: []
+      computed_at: '2026-08-27T02:14:11'
+      updated_at: '2026-08-27T02:14:11'
+- operationId: get_api_auction_market
+  method: GET
+  path: /api/auction-market
+  summary: Auction-market price snapshot for the same brand, model, and year window.
+  tags:
+  - Market intelligence
+  scope: market
+  request_examples:
+  - GET https://api.thecarapi.com/api/auction-market?brand=BMW&model=320d&year=2019&scope=active
+  - GET https://api.thecarapi.com/api/auction-market?brand=Kia&model=EV6&year=2023&flex=1
+  response_example_200:
+    success: true
+    snapshot:
+      clean_make: BMW
+      clean_model: 320d
+      year_center: 2019
+      year_flex: 1
+      year_from: 2018
+      year_to: 2020
+      scope: all
+      auction_count: 412
+      avg_price_eur: 18220.4
+      median_price_eur: 17800
+      p10_price_eur: 11900
+      p25_price_eur: 14750
+      p75_price_eur: 21400
+      p90_price_eur: 26100
+      min_price_eur: 6200
+      max_price_eur: 44900
+      first_seen_min: '2026-01-04T00:00:00'
+      first_seen_max: '2026-08-22T00:00:00'
+      auctions: []
+      computed_at: '2026-08-27T02:41:03'
+      updated_at: '2026-08-27T02:41:03'
+- operationId: get_api_calculator_countries
+  method: GET
+  path: /api/calculator/countries
+  summary: List supported origin and destination countries with EU membership and VAT rates.
+  tags:
+  - Import calculator
+  scope: calculator
+  request_examples:
+  - GET https://api.thecarapi.com/api/calculator/countries
+  - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/calculator/countries"'
+  response_example_200:
+    success: true
+    countries:
+    - code: DE
+      name: Germany
+      eu: true
+      vat: 0.19
+    - code: KR
+      name: South Korea
+      eu: false
+      vat: 0
+- operationId: post_api_calculator_calculate
+  method: POST
+  path: /api/calculator/calculate
+  summary: Estimate duty, VAT, fees, and the landed total for one lot price.
+  tags:
+  - Import calculator
+  scope: calculator
+  request_examples:
+  - "POST https://api.thecarapi.com/api/calculator/calculate\n{\n  \"price\": 15000,\n  \"origin\": \"\
+    KR\",\n  \"destination\": \"BG\",\n  \"site_name\": \"encar\"\n}"
+  - "POST https://api.thecarapi.com/api/calculator/calculate\n{\n  \"price\": 9800,\n  \"origin\": \"\
+    BE\",\n  \"destination\": \"BG\",\n  \"site_name\": \"ecarstrade\"\n}"
+  response_example_200:
+    success: true
+    currency: EUR
+    breakdown:
+      lot_price: 15000
+      auction_fee: 0
+      trucking: 0
+      shipping: 1800
+      our_fee: 700
+      subtotal_customs_value: 16800
+      duty_rate: 10
+      duty_amount: 1680
+      vat_rate: 20
+      vat_amount: 3696
+      customs_agency: 800
+      custom_clearance_total: 6176
+      estimated_total: 23676
+- operationId: get_api_health_live
+  method: GET
+  path: /api/health/live
+  summary: Unauthenticated process liveness probe.
+  tags:
+  - Health & contract
+  scope: none — no API key required
+  request_examples:
+  - GET https://api.thecarapi.com/api/health/live
+  response_example_200:
+    status: ok
+    service: car-details-api
+    contract_version: '2026-08-19'
+- operationId: get_api_health_ready
+  method: GET
+  path: /api/health/ready
+  summary: Unauthenticated readiness probe — is the data layer reachable?
+  tags:
+  - Health & contract
+  scope: none — no API key required
+  request_examples:
+  - GET https://api.thecarapi.com/api/health/ready
+  response_example_200:
+    status: ready
+- operationId: get_api_health
+  method: GET
+  path: /api/health
+  summary: Return service, data-feed and schema health.
+  tags:
+  - Health & contract
+  scope: ops
+  request_examples:
+  - GET https://api.thecarapi.com/api/health
+  - 'curl -H "Authorization: Bearer $API_KEY" "https://api.thecarapi.com/api/health"'
+  response_example_200:
+    status: healthy
+    service: car-details-api
+    worker_pid: 41
+    contract_version: '2026-08-19'
+    typesense:
+      enabled: true
+      healthy: true
+    public_auction_feed:
+      enabled: true
+      fresh: true
+- operationId: get_api_contract
+  method: GET
+  path: /api/contract
+  summary: Machine-readable schema catalog, pagination limits, and live-price capability.
+  tags:
+  - Health & contract
+  scope: ops
+  request_examples:
+  - GET https://api.thecarapi.com/api/contract
+  - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/contract"'
+  response_example_200:
+    success: true
+    version: '2026-08-19'
+    schemas:
+      search_result_card:
+        required: []
+        optional: []
+    pagination:
+      max_limit: 100
+      max_offset: 5000
+    live_prices:
+      enabled: true
+      sites:
+      - openlane
+      - ecarstrade
+      ttl_seconds: 120
+- operationId: get_
+  method: GET
+  path: /
+  summary: Return the human-readable API index and service version.
+  tags:
+  - Health & contract
+  scope: ops
+  request_examples:
+  - GET https://api.thecarapi.com/
+  - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/"'
+  response_example_200:
+    service: Car Details API
+    version: 2.0.0
+    endpoints:
+      GET /api/health: Health check endpoint
+    typesense:
+      enabled: true
+      running: true

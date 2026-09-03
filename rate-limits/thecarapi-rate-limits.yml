@@ -1,0 +1,100 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/docs/conventions
+docs:
+  - https://thecarapi.com/docs/conventions
+  - https://thecarapi.com/docs/errors
+  - https://thecarapi.com/docs/authentication
+  - https://thecarapi.com/pricing
+limit_count: 3
+model: >-
+  Fixed-window quotas configured per managed key. Windows are fixed, not sliding, so a boundary
+  burst of two full windows back to back is expected and documented. A key may also be issued with
+  no quota at all, in which case none of the rate-limit headers are sent — their absence means
+  "unlimited", not "limit reached".
+limits:
+  - id: key-quota-windows
+    scope: per-key
+    windows:
+      - minute
+      - hour
+      - day
+      - month
+    limit: null
+    burst: null
+    note: >-
+      Configurable per key on any of the four periods; the published documentation does not name a
+      default numeric value for any window, so limit is recorded null rather than guessed. All
+      configured windows are checked before any is charged, so a request rejected by the day limit
+      does not also spend a minute of the minute allowance. When a key carries quotas, every
+      response reports the window with the least headroom left.
+    exhaustion_status: 429
+    source: https://thecarapi.com/docs/conventions
+  - id: plan-monthly-request-volume
+    scope: per-account
+    window: month
+    limit: 200000
+    unit: requests
+    plan: Unlimited (EUR 250/mo)
+    note: >-
+      The commercial ceiling published on the pricing page — "Up to 200,000 API requests per
+      month". The free evaluation tier is described only as "limited requests for evaluation" with
+      no published number.
+    source: https://thecarapi.com/pricing
+  - id: auth-brute-force-lockout
+    scope: per-ip
+    window: 15 minutes
+    limit: 5
+    unit: failed authentication attempts
+    note: >-
+      Five failed authentications from one IP lock that address out for 15 minutes; every
+      subsequent request answers 429 even when it carries a valid key. A successful authentication
+      clears the counter. This is an authentication control, not a quota, but it surfaces as 429.
+    exhaustion_status: 429
+    source: https://thecarapi.com/docs/authentication
+response_headers:
+  - header: X-RateLimit-Remaining
+    note: 'Reports the window with the least headroom left. 0 on a quota breach.'
+  - header: Retry-After
+    note: >-
+      Sent on 429. The provider tells clients to honour it rather than backing off on a schedule of
+      their own.
+  - header: X-Request-ID
+    note: Correlation id on every response; the only handle support has on a specific call.
+  - header: X-Cache
+    note: 'HIT | MISS | STALE on read routes.'
+  - header: ETag
+    note: >-
+      Weak (W/"...") across the API by design. Echo it back in If-None-Match for a 304 and no body.
+  - header: X-Live-Price
+    note: '"pending" when a live-price refresh missed the request budget.'
+headers_absent_when: >-
+  A key issued with no quota receives none of the rate-limit headers. The provider states plainly
+  that their absence means unlimited, not exhausted.
+exhaustion:
+  status: 429
+  body: '{"success": false, "error": "Rate limit exceeded (1000 per hour)"}'
+  body_note: The message names the window that was broken. The 1000/hour figure is the provider's illustrative example, not a published default.
+  retry: Yes — after Retry-After.
+quota_accounting:
+  - endpoint: /api/facets
+    cost: 1
+    note: >-
+      Costs one request against quota however many facet dimensions are requested, versus six for
+      the per-dimension endpoints. The provider names this as the cheapest way to build a filter
+      sidebar.
+  - endpoint: /api/health/live
+    cost: 0
+  - endpoint: /api/health/ready
+    cost: 0
+retry_policy:
+  retry:
+    - 429
+    - 503
+    - 500
+  never_retry:
+    - 400
+    - 401
+    - 403
+    - 404
+  source: https://thecarapi.com/docs/errors

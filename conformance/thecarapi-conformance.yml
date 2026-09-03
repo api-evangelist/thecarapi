@@ -1,0 +1,170 @@
+generated: '2026-09-01'
+method: derived
+source: openapi/thecarapi-openapi.json + https://thecarapi.com/docs
+docs:
+  - https://thecarapi.com/docs/conventions
+  - https://thecarapi.com/docs/errors
+  - https://thecarapi.com/docs/authentication
+note: >-
+  No compliance certifications, trust centre, audit reports or regulatory attestations are
+  published anywhere on thecarapi.com — no SOC 2, ISO 27001, GDPR DPA, PCI or similar. The
+  privacy policy and terms pages are the only governance documents. Nothing here is asserted that
+  the provider does not itself publish or that the spec does not itself demonstrate.
+standards:
+  - id: openapi
+    conforms: true
+    version: 3.1.0
+    evidence: >-
+      https://thecarapi.com/openapi.json parses as OpenAPI 3.1.0 with 37 paths / 39 operations,
+      every operation carrying an operationId, summary, description, tags, security and
+      2xx + 400/401/403/404/429 responses. The docs page notes the API's own published spec is
+      3.0.3 and this generated file is 3.1 describing the same surface.
+  - id: oauth2
+    conforms: false
+    evidence: >-
+      No oauth2 securityScheme in the spec, no authorization or token endpoint, and
+      /.well-known/oauth-authorization-server returns 404 on both hosts. Authentication is by API
+      key; the Bearer scheme reuses the same key and is not OAuth.
+  - id: oidc
+    conforms: false
+    evidence: /.well-known/openid-configuration returns 404 on thecarapi.com and api.thecarapi.com.
+  - id: rfc9457
+    conforms: false
+    evidence: >-
+      Errors use a custom envelope {"success": false, "error": "<message>"} with
+      content-type application/json. No application/problem+json media type appears anywhere in
+      the spec, and there is no type/title/detail/instance member set.
+  - id: rfc7232
+    name: HTTP Conditional Requests (ETag / If-None-Match)
+    conforms: true
+    evidence: >-
+      https://thecarapi.com/docs/conventions documents weak ETags across the API, If-None-Match on
+      the request, and 304 Not Modified with no body. /api/search gained an ETag in contract
+      2026-08-19; facet and catalog routes already had one.
+  - id: rfc9110-retry-after
+    name: Retry-After on 429/503
+    conforms: true
+    evidence: >-
+      https://thecarapi.com/docs/conventions — a quota breach returns 429 with Retry-After and
+      X-RateLimit-Remaining 0, and the provider instructs clients to honour the header rather than
+      back off on their own schedule.
+  - id: ietf-ratelimit-headers
+    name: RFC 9239-style RateLimit-* header fields
+    conforms: false
+    evidence: >-
+      The provider ships X-RateLimit-Remaining and Retry-After, not the standardised
+      RateLimit-Limit / RateLimit-Remaining / RateLimit-Reset triplet.
+  - id: pagination
+    conforms: true
+    style: offset-limit with a page/page_size alias
+    evidence: >-
+      https://thecarapi.com/docs/conventions publishes limit/offset, the page/page_size alias, the
+      100 max limit, the offset-5000 cap on the capped routes, and the runtime publication of
+      pagination.max_limit / pagination.max_offset via GET /api/contract.
+  - id: idempotency
+    conforms: na
+    evidence: >-
+      Read-only API — no write surface exists, so idempotency is not applicable rather than
+      absent. See conventions/thecarapi-conventions.yml.
+  - id: json-api
+    conforms: false
+    evidence: Custom envelope with a route-specific payload key; no data/attributes/relationships structure and no application/vnd.api+json media type.
+  - id: odata
+    conforms: false
+    evidence: No $metadata surface, no OData query options.
+  - id: scim
+    conforms: false
+    evidence: No SCIM schema URNs; the API has no identity or provisioning surface.
+  - id: fhir
+    conforms: false
+    evidence: Out of domain.
+  - id: fapi
+    conforms: false
+    evidence: Out of domain — no financial-grade or open-banking surface.
+  - id: psd2
+    conforms: false
+    evidence: Out of domain.
+  - id: asyncapi
+    conforms: false
+    evidence: >-
+      No event, streaming or webhook surface exists. The spec declares no webhooks block, the docs
+      publish no webhook or callback reference, and no AsyncAPI document was found. Recorded as
+      absent rather than as a failure — this is a read/poll API by design.
+  - id: gzip-content-encoding
+    name: Content negotiation for compression
+    conforms: true
+    evidence: 'https://thecarapi.com/docs/conventions — Accept-Encoding: gzip, threshold 2 KB.'
+  - id: llms-txt
+    name: llms.txt convention
+    conforms: true
+    evidence: >-
+      https://thecarapi.com/llms.txt returns 200 text/plain and follows the convention (H1, blockquote
+      summary, sectioned link lists with one-line descriptions). A second scoped index is served at
+      https://thecarapi.com/docs/llms.txt.
+domain_standards:
+  market: automotive / vehicle auction and classifieds data
+  declared: false
+  searched_for:
+    - id: vin-iso-3779
+      name: ISO 3779 Vehicle Identification Number
+      found: partial
+      evidence: >-
+        The API is addressed by VIN on GET /api/vin/{vin}/history and carries chassis_number on
+        the auction detail payload, so it consumes the ISO 3779 identifier scheme. It does not
+        declare conformance to it anywhere in the contract, publish a VIN decode/validation
+        surface, or constrain the parameter with an ISO 3779 pattern in the spec, so this is
+        recorded as identifier use rather than domain-standard conformance.
+    - id: nedc-wltp
+      name: NEDC / WLTP emissions test cycles
+      found: partial
+      evidence: >-
+        https://thecarapi.com/docs/co2 documents co2, co2_estimated and co2_estimated_standard,
+        with the provider stating the NEDC/WLTP split makes a standard tag mandatory and that the
+        measured and derived fields must never be merged. The contract carries the standard as a
+        data value; it does not claim conformance to a certification regime.
+    - id: iso-3166
+      name: ISO 3166 country codes
+      found: true
+      evidence: >-
+        country_code, country and the calculator origin/destination codes are ISO codes. The docs
+        flag one deliberate inconsistency — the calculator spells the United Kingdom UK where the
+        vehicle facets spell it GB.
+    - id: iso-4217
+      name: ISO 4217 currency codes
+      found: partial
+      evidence: Prices are denominated EUR and BGN with a currency_code_id field; no explicit ISO 4217 declaration in the contract.
+    - id: openrtb
+      found: false
+    - id: stat-xplore-or-open-data-standards
+      found: false
+  conclusion: >-
+    Vehicle auction and classifieds inventory has no widely adopted machine-readable interchange
+    standard comparable to FHIR or ISO 20022, and TheCarApi declares none. This is recorded as an
+    honest absence in a market without a standard, not as a gap — the rubric's domain-standard
+    check is reward-only and nothing is invented to fill it.
+certifications_published: []
+compliance_programs_published: []
+privacy:
+  privacy_policy: https://thecarapi.com/privacy
+  terms_of_service: https://thecarapi.com/terms
+  data_minimisation_claim: >-
+    The 2026-08-14 changelog entry records that account-scoped commercial data is stripped at the
+    response boundary — auction fees, bid history, transport and delivery keys, the provider's own
+    buyer-account identity, and internal processing metadata — and that email addresses are
+    redacted from free-text values. That is a published data-handling behaviour, not a
+    certification.
+agent_policy:
+  robots_txt: https://thecarapi.com/robots.txt
+  allows_ai_citation_crawlers:
+    - OAI-SearchBot
+    - ChatGPT-User
+    - PerplexityBot
+    - Claude-SearchBot
+    - Claude-User
+    - Applebot
+  disallows_bulk_training_crawlers:
+    - CCBot
+    - Bytespider
+    - Amazonbot
+    - meta-externalagent
+  api_path_disallowed: /api/

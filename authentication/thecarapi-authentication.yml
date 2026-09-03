@@ -1,0 +1,80 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/docs/authentication
+docs: https://thecarapi.com/docs/authentication
+spec_source: openapi/thecarapi-openapi.json
+summary:
+  model: api-key
+  oauth2: false
+  openid_connect: false
+  mutual_tls: false
+  types:
+    - apiKey
+    - http
+  api_key_in:
+    - header
+    - query
+  note: >-
+    Every endpoint except the two unauthenticated liveness probes (/api/health/live and
+    /api/health/ready) requires an API key. The three presentation methods are interchangeable;
+    the provider recommends the X-API-Key header for server-to-server calls.
+schemes:
+  - name: apiKeyHeader
+    type: apiKey
+    in: header
+    parameter: X-API-Key
+    recommended: true
+    description: Recommended for server-to-server calls.
+    sources:
+      - openapi/thecarapi-openapi.json
+      - https://thecarapi.com/docs/authentication
+  - name: bearerAuth
+    type: http
+    scheme: bearer
+    description: 'Authorization: Bearer <key>. Documented as equivalent to X-API-Key.'
+    sources:
+      - openapi/thecarapi-openapi.json
+      - https://thecarapi.com/docs/authentication
+  - name: queryApiKey
+    type: apiKey
+    in: query
+    parameter: api_key
+    documented_only: true
+    default_enabled: false
+    description: >-
+      ?api_key=<key>. Disabled by default and enabled per key on request. The provider warns that
+      keys in URLs end up in logs and referrers. Not declared in the OpenAPI securitySchemes.
+    sources:
+      - https://thecarapi.com/docs/authentication
+unauthenticated_endpoints:
+  - operationId: get_api_health_live
+    path: /api/health/live
+    note: Process liveness probe. No key, no quota.
+  - operationId: get_api_health_ready
+    path: /api/health/ready
+    note: Readiness probe. No key, no quota. 503 while the data layer is unreachable.
+key_restrictions:
+  - restriction: ip_or_cidr_allowlist
+    effect_when_violated: '403'
+  - restriction: origin_allowlist
+    effect_when_violated: '403'
+    note: Browser requests from other origins.
+  - restriction: expiry_date
+    effect_when_violated: '401'
+  - restriction: status_revoked_or_suspended
+    effect_when_violated: '403'
+  - restriction: scope_set
+    effect_when_violated: '403'
+    body: '{"success": false, "error": "API key is not authorized for this route"}'
+    note: >-
+      No machine-readable error code in the body — the provider tells clients to branch on the
+      status code, not the message text.
+brute_force_lockout:
+  trigger: five failed authentication attempts from one IP
+  effect: every subsequent request from that address returns 429 for 15 minutes, including requests carrying a valid key
+  reset: a successful authentication clears the counter
+  source: https://thecarapi.com/docs/authentication
+client_side_guidance: >-
+  The provider explicitly warns against shipping a full-access key to a browser or mobile app, and
+  recommends a separate key with an origin allowlist and minimum scopes, or a backend proxy.
+scopes_artifact: scopes/thecarapi-scopes.yml

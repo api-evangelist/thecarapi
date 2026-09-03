@@ -1,0 +1,126 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/docs/errors
+spec_source: openapi/thecarapi-openapi.json
+docs: https://thecarapi.com/docs/errors
+format: custom-json
+rfc9457: false
+envelope:
+  shape: '{"success": false, "error": "<sanitized message>"}'
+  fields:
+    - name: success
+      type: boolean
+      value: false
+      note: Always false on an error. Note that GET /load-models returns no success flag at all — its response keys are brand names.
+    - name: error
+      type: string
+      note: Sanitized human-readable failure message. There is no machine-readable error code anywhere in the body.
+  correlation_header: X-Request-ID
+  correlation_note: >-
+    The provider states X-Request-ID is the only handle support has on a specific call, and that
+    clients should branch on the HTTP status code, not on the message text.
+machine_readable_codes: false
+machine_readable_note: >-
+  This API publishes no error-code registry. The 403 scope-denial body is called out in the docs as
+  having "no machine-readable error code in the body — branch on the status, not on the message
+  text." An agent must therefore key its handling on status code plus, where it must disambiguate,
+  a substring of the sanitized message.
+problem_types:
+  - status: 400
+    title: Bad Request
+    component_ref: '#/components/responses/BadRequest'
+    meaning: Invalid filter, pagination, source, unknown query parameter, or malformed body.
+    retry: false
+    remediation: >-
+      Fix the request. A 400 names the offending value and lists what would have been accepted —
+      e.g. "Unknown site 'ebay'. Valid sites: auto1, japanauction, copart, ecarstrade, encar,
+      openlane, schadeautos". Also raised by limit=0 or negative, page=0, mixing page with offset
+      or page_size with limit, and paging past offset 5000 on the capped routes.
+  - status: 401
+    title: Unauthorized
+    component_ref: '#/components/responses/Unauthorized'
+    meaning: Missing, invalid, or expired API key.
+    retry: false
+    remediation: >-
+      Do not retry in a loop — five failed authentications from one IP trigger a 15-minute
+      lockout that answers 429 even to a valid key.
+  - status: 403
+    title: Forbidden
+    component_ref: '#/components/responses/Forbidden'
+    meaning: Revoked or suspended key, or a scope, IP-allowlist, or origin denial.
+    retry: false
+    body_example: '{"success": false, "error": "API key is not authorized for this route"}'
+    remediation: >-
+      A 403 on a route usually means the scope was never granted rather than that anything is
+      broken; the operator can enable it. Check scopes at startup with GET /api/contract.
+  - status: 404
+    title: Not Found
+    component_ref: '#/components/responses/NotFound'
+    meaning: Source-aware resource not found.
+    retry: false
+    remediation: >-
+      On the market-intelligence routes a 404 is the normal answer for a thin brand/model/year
+      combination — "no snapshot exists for that window" — not an error to retry.
+  - status: 409
+    title: Conflict
+    meaning: Ambiguous legacy identifier.
+    retry: false
+    remediation: Disambiguate with the `site` parameter.
+    note: Documented on the errors page; not declared in the OpenAPI responses.
+  - status: 413
+    title: Payload Too Large
+    meaning: Request body over 50 MB. Only reachable on the POST routes.
+    retry: false
+    remediation: Split the batch.
+    note: Documented on the errors page; not declared in the OpenAPI responses.
+  - status: 429
+    title: Too Many Requests
+    component_ref: '#/components/responses/RateLimited'
+    meaning: Brute-force authentication lockout (five failures from one IP) or a rate/quota limit.
+    retry: true
+    retry_after_header: Retry-After
+    body_example: '{"success": false, "error": "Rate limit exceeded (1000 per hour)"}'
+    remediation: Honour Retry-After. X-RateLimit-Remaining is 0 on a quota breach; the message names the window that broke.
+  - status: 500
+    title: Internal Server Error
+    meaning: Unexpected server error. The message is sanitized.
+    retry: true
+    remediation: Retry with backoff.
+    note: Documented on the errors page; not declared in the OpenAPI responses.
+  - status: 503
+    title: Service Unavailable
+    meaning: >-
+      A dependency is unavailable, a search or facet query exceeded its safety timeout, a dataset
+      has not been built yet, or authentication itself could not be verified.
+    retry: true
+    remediation: >-
+      Retry with backoff. "Authentication is temporarily unavailable" is explicitly not a verdict
+      on the key. A 503 from a deep filtered search is asking the caller to narrow the filter —
+      retrying the same URL will not help. All three /api/theparking/* routes return 503 while the
+      classifieds dataset has not been built yet.
+non_errors:
+  note: >-
+    The provider documents three responses that look like failures and are not — handling them as
+    errors is named as the most common integration bug.
+  cases:
+    - signal: missing live_price block
+      meaning: The car is served at its cycle price, which for most listings is the only price there is.
+    - signal: 'details_pending: true'
+      meaning: The upstream detail fetch is still running. Poll; do not retry in a tight loop.
+    - signal: empty inspection_reports or images array
+      meaning: Most listings publish no reports, and a gallery not yet vaulted reports its shortfall as pending.
+    - signal: 'is_blind: true with current_price null'
+      meaning: >-
+        The auction house publishes no bid at all, by design. current_price null is a final answer,
+        not missing data — no live price will ever arrive. Most eCarsTrade auctions are blind.
+      source: https://thecarapi.com/docs/schema
+retry_policy:
+  retry:
+    - 429
+    - 503
+    - 500
+  never_retry:
+    - 400
+    - 401
+    - 403
+    - 404

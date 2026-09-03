@@ -1,0 +1,119 @@
+generated: '2026-09-01'
+method: derived
+status: candidate
+source: openapi/thecarapi-openapi.json
+search_note: >-
+  No MCP server is published by TheCarApi — hosted or local. /.well-known/mcp.json returns 404 on
+  both thecarapi.com and api.thecarapi.com; there is no npm or PyPI package under this name; there
+  is no provider GitHub organisation; and the provider's own agent guidance page
+  (https://thecarapi.com/docs/agents) points agents at the OpenAPI document, the Markdown twins
+  and llms.txt rather than at any MCP endpoint. The tool list below is a CANDIDATE derived from
+  the published OpenAPI operations — it describes what an MCP server over this API could expose,
+  not anything the provider ships. No MCPServer pointer is wired in apis.yml, because wiring one
+  would assert an agent surface that does not exist.
+deployment:
+  mode: none
+  endpoint: null
+  install: null
+  package: null
+  auth: api-key
+  auth_note: >-
+    Any MCP server over this API would carry the caller's X-API-Key or Bearer token; 37 of the 39
+    operations require a key and are scope-gated per key.
+  verified: derived
+provider_agent_surface:
+  published: true
+  kind: documentation-not-mcp
+  artifacts:
+    - https://thecarapi.com/llms.txt
+    - https://thecarapi.com/docs/llms.txt
+    - https://thecarapi.com/openapi.json
+    - https://thecarapi.com/docs/thecarapi-api-reference.md
+    - https://thecarapi.com/docs/thecarapi-api-reference.txt
+    - https://thecarapi.com/docs/thecarapi-api-reference.json
+    - https://thecarapi.com/llms-full.txt
+  note: >-
+    The provider has invested real work in agent consumption — every docs page has a Markdown
+    twin, robots.txt explicitly admits AI citation crawlers, and the agents page ships a starting
+    prompt with the non-obvious rules an integrating agent needs. What is missing is the callable
+    layer: an agent can read this API's documentation perfectly and still has to write an HTTP
+    client to use it.
+candidate_tools:
+  - name: search_vehicles
+    description: Filtered search over live auction inventory across all seven sources.
+    rest: get_api_search
+    scope: search
+  - name: search_auction_ids
+    description: Return the bare numeric auction ids matching a filter set. A filter, not an addressing scheme.
+    rest: get_api_search_auction_ids
+    scope: search
+  - name: get_facets
+    description: Return brands, years, fuels, countries, gearboxes and sites in one cross-filtered response.
+    rest: get_api_facets
+    scope: search
+  - name: list_sources
+    description: List the live auction source slugs and their counts.
+    rest: get_api_sites
+    scope: search
+  - name: list_brands
+    description: List brands with cross-filtered counts.
+    rest: get_api_brands
+    scope: search
+  - name: list_models
+    description: List models for a brand with cross-filtered counts.
+    rest: get_api_models
+    scope: search
+  - name: get_auction_detail
+    description: Full source-aware listing detail for a site_name + auction_id pair, including vault_gallery.
+    rest: get_api_auction_site_slug_auction_id
+    scope: auctions
+  - name: get_price_history
+    description: Price events for a lot, oldest first, capped at 5,000 events.
+    rest: get_api_auction_site_slug_auction_id_price_history
+    scope: auctions
+  - name: get_auction_images
+    description: Ordered, vaulted, CDN-served gallery for a lot.
+    rest: get_api_auction_images_site_slug_auction_id
+    scope: auctions
+  - name: get_vin_history
+    description: Cross-listing history for a VIN. Not enabled on a new key by default.
+    rest: get_api_vin_vin_history
+    scope: auctions
+  - name: get_vehicle_details
+    description: Full vehicle detail payload from cache or, when needed, from the upstream source.
+    rest: get_api_car_details
+    scope: details
+  - name: get_top_offers
+    description: Live auctions priced below their market reference, each carrying the reference the verdict was made against.
+    rest: get_api_top_offers
+    scope: top-offers
+  - name: search_classifieds
+    description: European retail classifieds listings from 681 origin portals across 39 countries.
+    rest: get_api_theparking_listings
+    scope: theparking
+  - name: get_market_snapshot_retail
+    description: Cars.bg retail market price snapshot for a brand/model/year window.
+    rest: get_api_cars_bg_market
+    scope: market
+  - name: get_market_snapshot_auction
+    description: Auction market price snapshot for a brand/model/year window.
+    rest: get_api_auction_market
+    scope: market
+  - name: calculate_import_cost
+    description: Estimate duty, VAT, fees and the landed total for one lot price and an origin/destination pair.
+    rest: post_api_calculator_calculate
+    scope: calculator
+  - name: get_catalog_manufacturers
+    description: Slug-addressable manufacturer catalog.
+    rest: get_api_catalog_manufacturers
+    scope: catalog
+  - name: get_catalog_model_groups
+    description: Slug-addressable model-group catalog.
+    rest: get_api_catalog_model_groups
+    scope: catalog
+  - name: get_contract
+    description: Machine-readable schema catalog, pagination limits and live-price capability. Call once at startup.
+    rest: get_api_contract
+    scope: ops
+candidate_tool_count: 19
+total_rest_operations: 39

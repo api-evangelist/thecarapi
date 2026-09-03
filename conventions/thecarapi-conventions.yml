@@ -1,0 +1,267 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/docs/conventions
+docs:
+  - https://thecarapi.com/docs/conventions
+  - https://thecarapi.com/docs/errors
+  - https://thecarapi.com/docs/authentication
+  - https://thecarapi.com/docs/agents
+spec_source: openapi/thecarapi-openapi.json
+auth_style:
+  model: api-key
+  header: X-API-Key
+  alternatives:
+    - 'Authorization: Bearer <key>'
+    - '?api_key=<key> (disabled by default)'
+  see: authentication/thecarapi-authentication.yml
+response_envelope:
+  success_flag: success
+  payload_key: route-specific (results, brands, listings, ...)
+  metadata_fields:
+    - name: contract_version
+      type: string
+      meaning: Schema contract this deployment serves, currently 2026-08-19.
+    - name: request_id
+      type: string
+      meaning: Correlation id, also returned in X-Request-ID.
+    - name: server_time
+      type: timestamp
+      meaning: UTC ISO-8601 response time.
+    - name: data_updated_at
+      type: timestamp
+      meaning: Time the underlying data was last refreshed.
+  metadata_coverage: partial
+  routes_without_metadata:
+    - /load-models
+    - /api/car-details
+    - /api/listVehicles
+    - price history
+    - VIN history
+    - /api/search/auction-ids
+    - /api/cars-bg-market
+    - /api/auction-market
+    - /api/calculator/calculate
+    - /api/contract
+    - the health routes
+    - GET /
+  metadata_note: >-
+    Every route without the body fields still returns the correlation id on the X-Request-ID
+    header, so a single code path should read the header rather than the body field. GET
+    /load-models goes further and returns no success flag either — its response keys are brand
+    names and nothing else may share that namespace, so a generic wrapper asserting body.success
+    must special-case it.
+  error_envelope: '{"success": false, "error": "<sanitized message>"}'
+  see: errors/thecarapi-problem-types.yml
+request_id_tracing:
+  response_header: X-Request-ID
+  client_supplied: true
+  max_length: 80
+  behaviour: A client-supplied X-Request-ID is echoed back.
+  note: The provider states this is the only handle support has on a specific call.
+pagination:
+  style: offset-limit with a page/page_size alias
+  parameters:
+    - name: limit
+      alias: page_size
+      meaning: Page size. Max 100; larger values are clamped down, not rejected. limit=0 or negative is a 400.
+    - name: offset
+      meaning: Zero-based row offset. Do not combine with page.
+    - name: page
+      meaning: One-based page number, maps to offset = (page - 1) * limit. page=0 is a 400.
+    - name: include_total
+      meaning: Set false to skip counting. Cheaper on large result sets.
+  response_fields:
+    - total
+    - total_pages
+    - limit
+    - offset
+    - page
+    - page_size
+    - max_page
+  defaults:
+    /api/search: 100
+    everything_else: 50
+  max_limit: 100
+  mixing_spellings: >-
+    Combining page with offset, or page_size with limit, is a 400. They are interchangeable ways of
+    describing the same window, not composable.
+  depth_policy:
+    no_offset_cap:
+      endpoints:
+        - /api/search
+        - /api/listVehicles
+      note: >-
+        Page to any depth. A very deep filtered search is answered from a compact index where it
+        can be; where it cannot, it is subject to a safety timeout and may return 503 asking the
+        caller to narrow it. Pages past offset 5000 are not cached.
+    capped_at_offset_5000:
+      endpoints:
+        - /api/catalog/*
+        - /api/top-offers
+        - /api/theparking/listings
+      note: A deeper page is a 400 naming the limit.
+    discovery: 'GET /api/contract publishes pagination.max_limit and pagination.max_offset — read them rather than hardcoding.'
+  partial_envelopes:
+    - endpoints:
+        - /api/top-offers
+        - /api/theparking/listings
+      returns:
+        - total
+        - limit
+        - offset
+        - total_pages
+      note: No page / page_size / max_page — page by offset there.
+caching:
+  header: X-Cache
+  values:
+    - HIT
+    - MISS
+    - STALE
+  ttls:
+    facet_and_catalog: ~600s
+    shallow_search: ~300s
+    deep_search_offset_gt_5000: not cached
+    live_price_refreshed: max-age drops to the live-price TTL (default 120s)
+    gallery_while_pending: max-age=10
+  conditional_requests:
+    etag: true
+    etag_strength: weak
+    etag_note: >-
+      ETags are weak (W/"...") across the API by design, so one tag stays valid whether or not the
+      body came back compressed. Compare them as opaque strings and echo them back exactly as
+      received — do not strip the W/ prefix or the quotes.
+    request_header: If-None-Match
+    response: 304 Not Modified with no body
+    coverage: /api/search gained an ETag in contract 2026-08-19; facet and catalog routes already had one.
+  cache_control_no_store: Responses carrying live_price_pending are served Cache-Control no-store so a follow-up read is not answered from cache.
+compression:
+  request_header: 'Accept-Encoding: gzip'
+  threshold: 2 KB
+  saving: ~1/8 of the bytes on a full 100-row search page
+  note: Below the threshold responses are sent uncompressed. Guzzle needs decode_content set explicitly.
+field_expansion:
+  supported: true
+  mechanism: 'fields= on /api/facets selects which facet dimensions to return.'
+  sparse_fieldsets: false
+  note: >-
+    There is no general sparse-fieldset or expand parameter. /api/facets is the one endpoint with a
+    field selector, and it exists to let a filter sidebar read six dimensions in one billed call.
+metadata_fields_user_defined: false
+versioning:
+  scheme: dated contract version, not in the URL
+  current: '2026-08-19'
+  see: lifecycle/thecarapi-lifecycle.yml
+rate_limit_signaling:
+  headers:
+    - X-RateLimit-Remaining
+    - Retry-After
+  exhaustion_status: 429
+  absence_means_unlimited: true
+  see: rate-limits/thecarapi-rate-limits.yml
+idempotency:
+  supported: na
+  idempotency_key_header: null
+  rationale: >-
+    Not applicable — TheCarApi has no write surface. Every one of the 39 published operations is a
+    read. The three POST routes (POST /api/car-details, POST /api/listVehicles, POST
+    /api/calculator/calculate) are query and calculation endpoints that use a body only because
+    the parameter set is too large for a query string; none of them creates, mutates or deletes
+    provider-side state, so repeating one is inherently safe and there is nothing for an
+    idempotency key to deduplicate.
+  natural_idempotency: All operations are naturally idempotent.
+  conditional_requests_note: >-
+    ETag / If-None-Match is supported, but that is cache revalidation, not write idempotency, and
+    is recorded under caching above rather than counted here.
+dry_run_mode:
+  supported: na
+  rationale: No write surface, therefore nothing to rehearse.
+reversibility:
+  applicable: na
+  grade: na
+  rationale: >-
+    Read-only API. There is no operation that creates, modifies, cancels, refunds, voids or
+    deletes anything on the provider's side, so there is no action for an agent to take back and
+    no reversal window to state. The nearest thing to a mutation in the whole surface is POST
+    /api/calculator/calculate, which returns an arithmetic estimate and stores nothing.
+  write_surface_operations: []
+  reversal_operations: []
+  note: >-
+    Recorded as `na` rather than absent so it reads as "checked, nothing to reverse" rather than
+    "not assessed". NO reversal window is asserted anywhere, because the provider states none and
+    none is needed.
+retry_semantics:
+  retry:
+    - 429
+    - 503
+    - 500
+  never_retry:
+    - 400
+    - 401
+    - 403
+    - 404
+  honour: Retry-After
+  published_reference_client: >-
+    The conventions page ships a four-attempt JavaScript retry helper that reads Retry-After and
+    falls back to 2**attempt seconds.
+addressing:
+  primary_key: site_name + auction_id_str
+  example: encar/38112900
+  caution: >-
+    Address a car with auction_id_str, not auction_id. japanauction ids exceed 2^53 for almost
+    every lot, so any client parsing JSON numbers as IEEE-754 doubles silently rounds auction_id
+    and the result no longer addresses the row it came from.
+  source: https://thecarapi.com/docs/schema
+data_typing:
+  prices: JSON numbers, never strings (since contract 2026-08-18)
+  timestamps: UTC ISO-8601
+  case_sensitivity:
+    - 'site and site_exclude are case-insensitive comma-separated lists.'
+    - "theparking's brand/model/fuel/gearbox/seller filters are case-sensitive."
+    - 'The calculator spells the United Kingdom UK where the vehicle facets spell it GB.'
+unknown_parameters:
+  current_behaviour: ignored
+  future_behaviour: >-
+    The provider warns unknown query parameters are "on the way to becoming a 400 naming the
+    offender" and tells clients not to rely on them being ignored. A filter that seems to have no
+    effect should be treated as a misspelling, not an unsupported feature.
+cross_links:
+  errors: errors/thecarapi-problem-types.yml
+  lifecycle: lifecycle/thecarapi-lifecycle.yml
+  authentication: authentication/thecarapi-authentication.yml
+  scopes: scopes/thecarapi-scopes.yml
+  rate_limits: rate-limits/thecarapi-rate-limits.yml
+event_surface:
+  checked: '2026-09-02'
+  method: probed
+  asyncapi: false
+  webhooks: false
+  websockets: false
+  server_sent_events: false
+  streaming: false
+  rationale: >-
+    TheCarApi publishes no event surface of any kind. There are no webhook registration
+    operations in the OpenAPI (39 operations, all request/response), no `webhooks` object in the
+    3.1 document, no AsyncAPI document, and no WebSocket or SSE endpoint. The provider's own
+    freshness model is pull-based and it says so: inventory is re-synced on a cycle and clients
+    are told to re-read search or the detail route, with ETag / If-None-Match to make the re-read
+    cheap. An agent wanting change notification has to poll.
+  polling_substitute:
+    guidance: >-
+      https://thecarapi.com/docs/live-prices documents the polling contract for the one thing that
+      moves inside a cycle — a running openlane or ecarstrade bid, refreshed at request time.
+      Everything else changes at the sync cycle (<= 12 h) and is detected with a conditional GET.
+    conditional_request: If-None-Match against the weak ETag, 304 on no change.
+  probes:
+    - url: https://thecarapi.com/asyncapi.yaml
+      status: 404
+    - url: https://thecarapi.com/docs/webhooks
+      status: 404
+    - url: https://thecarapi.com/sitemap.xml
+      status: 200
+      note: >-
+        Full site enumerated — 49 URLs, every docs page included. No webhooks, events, streaming
+        or subscriptions page exists anywhere on the property.
+  scoring_note: >-
+    Recorded as an honest absence. No AsyncAPI or Webhooks pointer is wired in apis.yml. A vehicle
+    inventory API with no event surface is a real design choice, not a gap we should manufacture
+    an artifact to cover.

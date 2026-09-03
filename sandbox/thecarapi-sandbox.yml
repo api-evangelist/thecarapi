@@ -1,0 +1,63 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/pricing
+docs:
+  - https://thecarapi.com/pricing
+  - https://thecarapi.com/docs/ops
+  - https://thecarapi.com/docs/code-examples
+sandbox_environment: false
+test_mode: false
+console: false
+playground: false
+note: >-
+  TheCarApi ships no sandbox environment, no test/live key split, no fixture or trigger tooling,
+  no interactive console and no API explorer. There is one evaluation route — a free temporary key
+  issued on request against the real production API — and two unauthenticated endpoints anyone can
+  call without any key at all. Recorded honestly: no Sandbox pointer is wired in apis.yml, because
+  a request-a-key evaluation tier is not a sandbox and asserting one would credit the provider
+  with a surface it does not serve.
+evaluation_access:
+  name: Test
+  price: 0
+  self_serve: false
+  request_via: https://thecarapi.com/contact
+  environment: production
+  key_prefix: null
+  key_prefix_note: The provider publishes no test-vs-live key prefix or mode flag; a test key is an ordinary key with limited volume.
+  quota: '"Limited requests for evaluation" — no published number.'
+  surface: Real endpoints — search, detail, images. The full API surface.
+  intended_for:
+    - demos
+    - investor showcases
+    - proofs-of-concept
+  card_required: false
+unauthenticated_endpoints:
+  - operationId: get_api_health_live
+    path: https://api.thecarapi.com/api/health/live
+    status: 200
+    auth: none
+    quota_cost: 0
+    note: >-
+      The only two endpoints in the API that answer without a key. They are liveness/readiness
+      probes, not a data sandbox — they return service status, never vehicle data — but they are
+      the one part of this API an agent can reach with nothing configured.
+  - operationId: get_api_health_ready
+    path: https://api.thecarapi.com/api/health/ready
+    status: 200
+    auth: none
+    quota_cost: 0
+test_data:
+  test_cards: null
+  test_identifiers: null
+  fixtures: null
+  time_simulation: null
+  note: >-
+    No magic test identifiers, no fixture vehicles and no clock simulation are published. The
+    OpenAPI does carry inline response examples on its operations (for instance the search example
+    keyed on encar/38112900), and the docs use encar/38112900 throughout as the illustrative lot,
+    but neither is documented as a guaranteed-present test record — a real auction lot ends and
+    stops resolving. Do not treat it as a fixture.
+demo_surfaces:
+  - url: https://thecarapi.com
+    kind: marketing-demo
+    note: The home page renders a live demo of the search payload. Read-only, not an authenticated console.

@@ -1,12 +1,30 @@
-name: TheCarApi — Public API
+name: TheCarApi
 description: >-
   A multi-source vehicle auction inventory REST/JSON API aggregating live and archived auction listings and European
   retail classifieds. Provides search, facets, catalog, auction detail & price history, VIN history, market
   intelligence, and import cost calculators. Fully specified via OpenAPI 3.1 with Postman collection and agent-native
   documentation (llms.txt).
-url: https://raw.githubusercontent.com/api-evangelist/thecarapi-public-api/refs/heads/main/apis.yml
+url: https://raw.githubusercontent.com/api-evangelist/thecarapi/refs/heads/main/apis.yml
+image: https://thecarapi.com/og-image.png
+accessModel:
+  pricing: freemium
+  onboarding: self-serve
+  trial: false
+  try_now: true
+  public: false
+  label: Freemium · Self-serve signup
+  confidence: high
+  source:
+  - plans
+  - authentication
+  - scopes
+  - rate-limits
+  - security
+  - sandbox
+  generated: '2026-09-02'
+  method: derived
 created: '2026-09-01'
-modified: '2026-09-01'
+modified: '2026-09-02'
 specificationVersion: '0.21'
 tags:
   - Automotive
@@ -55,9 +73,74 @@ apis:
         url: https://thecarapi.com/llms.txt
 maintainers:
   - FN: TheCarApi Support
+    email: api@thecarapi.com
     url: mailto:api@thecarapi.com
 generated:
   by: apis.io/add
   model: claude-opus-4-8
   confidence: 95
   at: '2026-09-01T19:53:13.514Z'
+common:
+- type: DomainSecurity
+  url: security/thecarapi-domain-security.yml
+- type: Authentication
+  url: authentication/thecarapi-authentication.yml
+- type: OAuthScopes
+  url: scopes/thecarapi-scopes.yml
+- type: Conventions
+  url: conventions/thecarapi-conventions.yml
+- type: ErrorCatalog
+  url: errors/thecarapi-problem-types.yml
+- type: Lifecycle
+  url: lifecycle/thecarapi-lifecycle.yml
+- type: StatusPage
+  url: https://thecarapi.com/status
+- type: ChangeLog
+  url: https://thecarapi.com/changelog
+- type: ChangeLog
+  url: changelog/thecarapi-changelog.yml
+- type: Plans
+  url: plans/thecarapi-plans-pricing.yml
+- type: Pricing
+  url: https://thecarapi.com/pricing
+- type: RateLimits
+  url: rate-limits/thecarapi-rate-limits.yml
+- type: Conformance
+  url: conformance/thecarapi-conformance.yml
+- type: Vocabulary
+  url: vocabulary/thecarapi-vocabulary.yml
+- type: Examples
+  url: https://thecarapi.com/docs/code-examples
+- type: Examples
+  url: examples/thecarapi-examples.yml
+- type: DataModel
+  url: data-model/thecarapi-data-model.yml
+- type: Overlay
+  url: overlays/thecarapi-openapi-overlay.yaml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: https://thecarapi.com/llms.txt
+- type: Postman
+  url: https://thecarapi.com/thecarapi.postman_collection.json
+- type: DeveloperPortal
+  url: https://thecarapi.com/docs
+- type: Documentation
+  url: https://thecarapi.com/docs
+- type: GettingStarted
+  url: https://thecarapi.com/docs
+- type: APIReference
+  url: https://thecarapi.com/docs/thecarapi-api-reference.md
+- type: Support
+  url: https://thecarapi.com/contact
+- type: Blog
+  url: https://thecarapi.com/blog
+- type: TermsOfService
+  url: https://thecarapi.com/terms
+- type: PrivacyPolicy
+  url: https://thecarapi.com/privacy
+x-enrichment:
+  date: '2026-09-02'
+  status: enriched
+  artifacts_added: 0
+  pass: local-v1

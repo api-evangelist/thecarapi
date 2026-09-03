@@ -1,0 +1,92 @@
+generated: '2026-09-01'
+method: searched
+source: >-
+  npm registry search, PyPI, RubyGems, crates.io, the GitHub search API, and
+  https://thecarapi.com/docs/code-examples
+package_count: 0
+packages: []
+note: >-
+  TheCarApi publishes no client libraries. The provider says so directly on its code-examples
+  page — "There is no required SDK. Any HTTP client that can send headers and parse JSON will
+  work" — and ships complete copy-paste clients in cURL, TypeScript, Python and PHP instead.
+  Every registry probe returned nothing, so there is no version or published date to record for
+  any entry; the list is empty rather than carrying null-versioned placeholders.
+  No SDKs pointer is emitted, because there is no first-party SDK to point at.
+registry_probes:
+  - registry: npm
+    query: https://registry.npmjs.org/-/v1/search?text=thecarapi
+    status: 200
+    matches: 0
+  - registry: pypi
+    query: https://pypi.org/pypi/thecarapi/json
+    status: 404
+    matches: 0
+  - registry: rubygems
+    query: https://rubygems.org/api/v1/gems/thecarapi.json
+    status: 404
+    matches: 0
+  - registry: crates.io
+    query: https://crates.io/api/v1/crates?q=thecarapi
+    status: 200
+    matches: 0
+  - registry: github
+    query: https://api.github.com/orgs/thecarapi
+    status: 404
+    matches: 0
+    note: No provider GitHub organisation or user account exists under this name.
+distribution_alternatives:
+  - kind: postman-collection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+    status: 200
+    note: Every endpoint, grouped and described. Import straight into Postman or Insomnia.
+  - kind: openapi
+    url: https://thecarapi.com/openapi.json
+    status: 200
+    note: >-
+      The provider's stated path to a client is code generation from the OpenAPI document rather
+      than a maintained SDK.
+  - kind: code-examples
+    url: https://thecarapi.com/docs/code-examples
+    status: 200
+    languages:
+      - curl
+      - typescript
+      - python
+      - php
+    note: Complete runnable clients, not fragments. Not distributed through any registry.
+other_distribution_probes:
+  checked: '2026-09-02'
+  method: probed
+  note: >-
+    The rest of the distribution surface, checked so the absence is recorded rather than assumed.
+    Every one is a real miss, and none is wired as a pointer in apis.yml.
+  cli:
+    published: false
+    probes:
+      - url: https://thecarapi.com/docs/cli
+        status: 404
+    evidence: >-
+      No first-party CLI. The full sitemap (49 URLs) carries no CLI page, the code-examples page
+      ships cURL/TypeScript/Python/PHP snippets rather than a binary, and no CLI package exists in
+      any registry under this name.
+  ui_components:
+    published: false
+    evidence: >-
+      No embeddable widgets, web components, element library, hosted checkout/search surface or
+      embedded dashboard. TheCarApi sells normalized JSON; the rendering layer is explicitly the
+      customer's — the docs' "Read these before you render anything" section tells integrators how
+      to render the data themselves rather than shipping a component to do it.
+  grpc_protobuf:
+    published: false
+    evidence: >-
+      No .proto is published. There is no provider GitHub organisation (api.github.com/orgs/thecarapi
+      returns 404), no buf.build module, and the docs describe one REST/JSON transport only.
+  wsdl_soap:
+    published: false
+    probes:
+      - url: https://api.thecarapi.com/?wsdl
+        status: 401
+        note: >-
+          Not a SOAP endpoint. The API host answers every unauthenticated path with
+          {"error":"Invalid or missing API key","success":false}; the 401 is the auth gate, not a
+          WSDL. REST/JSON is the only transport documented anywhere on the property.

@@ -1,0 +1,129 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/changelog
+docs:
+  - https://thecarapi.com/changelog
+  - https://thecarapi.com/status
+  - https://thecarapi.com/docs/ops
+versioning:
+  scheme: dated-contract-version
+  current_version: '2026-08-19'
+  format: YYYY-MM-DD
+  in_url: false
+  note: >-
+    There is no version segment in the URL and no version header to send. The contract version is
+    a property of the deployment, returned on every response body that carries envelope metadata
+    as `contract_version` and by GET /api/contract as `version`. A client does not pin a version;
+    it reads the one it is served.
+  discovery_endpoint:
+    operationId: get_api_contract
+    path: /api/contract
+    returns:
+      - version
+      - schemas (required/optional keys per response shape)
+      - pagination.max_limit
+      - pagination.max_offset
+      - live_prices {enabled, sites, ttl_seconds}
+    guidance: >-
+      The provider's stated rule is to read /api/contract once at startup and gate on the declared
+      schema keys rather than comparing version strings.
+  compatibility_signal: >-
+    Each changelog entry states explicitly whether the contract moved. Entries are labelled
+    feature / improvement / fix / breaking, and additive releases say in the first line that an
+    integration written against the previous contract runs unmodified.
+deprecation_policy:
+  published: false
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  note: >-
+    No dedicated deprecation policy page, no Sunset or Deprecation response headers, and no
+    documented notice window. Breaking changes are announced in the changelog only, retroactively.
+    The one breaking release found (2026-08-18, price fields retyped from strings to JSON numbers)
+    carries no advance-notice or migration-window statement. A single non-additive removal is
+    recorded in the 2026-08-27 entry (GET /load-models stopped merging the four contract-metadata
+    keys into its body).
+  deprecated_operations_in_spec: 0
+  spec_source: openapi/thecarapi-openapi.json
+undocumented_surface_warning: >-
+  The provider warns that the `ops` scope also reaches internal routes that are not part of the
+  contract — "unversioned, undocumented and may change or disappear without a changelog entry".
+  Only the endpoints in the published reference should be treated as the contract.
+status_page:
+  url: https://thecarapi.com/status
+  status: 200
+  type: first-party-page
+  third_party_provider: null
+  machine_readable_feed: false
+  published_metrics:
+    uptime: 99.99%
+    p50_latency: <100ms
+    data_freshness: <= 12 h
+    per_source_indexing:
+      auto1: 100%
+      openlane: 100%
+      schadeautos: 100%
+      copart: 100%
+      ecarstrade: 100%
+      encar: 100%
+      japanauction: 100%
+      european_classifieds: 99%
+  note: >-
+    A static first-party status page with headline figures and per-source indexing coverage — not
+    an incident-history feed and not a hosted status service. The page itself tells automated
+    monitors to read the API's own health endpoints instead.
+  machine_readable_alternatives:
+    - operationId: get_api_health_live
+      path: /api/health/live
+      auth: none
+      note: Process liveness. Always 200 while the process is up.
+    - operationId: get_api_health_ready
+      path: /api/health/ready
+      auth: none
+      note: 200 {"status":"ready"} once the data layer is reachable; 503 {"status":"not_ready"} until then.
+    - operationId: get_api_health
+      path: /api/health
+      auth: 'api key, scope: ops'
+      note: >-
+        Service, data-feed and schema health. A degraded service still answers 200 with the reason
+        under schema_findings — alert on the status field, not the HTTP code.
+sla:
+  published: false
+  note: >-
+    No SLA document is published. The pricing page offers SLAs only under the custom/enterprise
+    track ("Bulk exports, dedicated infrastructure, custom corridors, SLAs, or on-premise
+    delivery — tell us what you need"). The 99.99% uptime figure on the status page and in the
+    site header is a stated metric, not a contractual commitment.
+support:
+  email: api@thecarapi.com
+  page: https://thecarapi.com/contact
+  channels:
+    - email
+    - telegram
+    - viber
+    - whatsapp
+    - phone
+  note: Priority email support is listed as a feature of the paid plan.
+changelog_artifact: changelog/thecarapi-changelog.yml
+live_verification:
+  checked: '2026-09-02'
+  method: probed
+  note: >-
+    The declared contract version was verified against the running service rather than taken from
+    the changelog alone. The unauthenticated liveness endpoint echoes it, and it matches the
+    version in the published OpenAPI document (info.version 2026-08-19) exactly.
+  probes:
+    - url: https://api.thecarapi.com/api/health/live
+      status: 200
+      body: '{"contract_version":"2026-08-19","service":"car-details-api","status":"ok"}'
+    - url: https://api.thecarapi.com/api/health/ready
+      status: 200
+      body: '{"service":"car-details-api","status":"ready"}'
+    - url: https://api.thecarapi.com/api/contract
+      status: 401
+      note: >-
+        The authoritative runtime schema surface is key-gated. An unauthenticated agent can learn
+        the contract VERSION from /api/health/live but cannot read the per-shape required/optional
+        key lists without a key, so the machine-readable schema this API points clients at is not
+        anonymously discoverable.
+  spec_version_match: true

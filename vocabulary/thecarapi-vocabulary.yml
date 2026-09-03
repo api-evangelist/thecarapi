@@ -1,0 +1,177 @@
+generated: '2026-09-01'
+method: derived
+source: >-
+  https://thecarapi.com/docs/sources + https://thecarapi.com/docs/schema +
+  https://thecarapi.com/docs/authentication + openapi/thecarapi-openapi.json
+note: >-
+  TheCarApi publishes closed, named vocabularies in prose across its reference — the site slug
+  set, the scope groups, the price-event types, the response-envelope keys. This artifact collects
+  them into one structured document. Every term and definition below is transcribed from the
+  provider's own documentation; nothing is coined here. The provider's own instruction is to read
+  the live sets from /api/sites and /api/contract rather than hardcoding them, so this is a
+  snapshot for reference, not a substitute for runtime discovery.
+runtime_sources:
+  - operationId: get_api_sites
+    path: /api/sites
+    provides: the live site slug set and per-source counts
+  - operationId: get_api_contract
+    path: /api/contract
+    provides: required/optional response keys per shape, pagination limits, live-price capability
+vocabularies:
+  - name: site
+    description: Identifies which auction source a listing came from. Closed set; an unknown slug is a 400 naming the offender.
+    used_in:
+      - '/api/search?site='
+      - '/api/auction/{site}/{id}'
+      - '/api/car-details?site='
+      - 'POST /api/calculator/calculate {site_name}'
+    case_sensitive: false
+    terms:
+      - term: auto1
+        label: Auto1 (EU)
+        inventory: live auctions
+        detail: Full + normalized vehicle_details
+      - term: openlane
+        label: OpenLane (EU)
+        inventory: live auctions
+        detail: Full + normalized vehicle_details
+        live_price: true
+      - term: ecarstrade
+        label: eCarsTrade (EU)
+        inventory: live auctions
+        detail: Full + normalized vehicle_details
+        live_price: true
+      - term: schadeautos
+        label: Schadeautos (NL)
+        inventory: live listings
+        detail: Full
+      - term: copart
+        label: Copart Germany
+        inventory: live auctions
+        detail: Full
+      - term: encar
+        label: Encar (South Korea)
+        origin: KR
+        inventory: live listings
+        detail: Full
+      - term: japanauction
+        label: Japanese auctions — USS, ARAI, AUCNET, BAYAUC, CAA
+        origin: JP
+        inventory: live listings
+        detail: Full, plus the graded auction sheet
+    not_a_term:
+      - term: theparking
+        reason: >-
+          The European classifieds network is a scope name, not a source name. It never appears in
+          /api/sites and passing it as a site value returns 400.
+  - name: scope
+    description: Permission groups attached to an API key, gating routes. Detail in scopes/thecarapi-scopes.yml.
+    terms:
+      - term: search
+      - term: catalog
+      - term: seo
+      - term: auctions
+      - term: details
+      - term: top-offers
+      - term: theparking
+      - term: market
+      - term: calculator
+      - term: ops
+      - term: '*'
+        note: Grants every route.
+      - term: public
+        note: Legacy compatibility bundle, preserved for older integrations.
+  - name: price_history_event_type
+    description: The event_type value on a price-history row. Exactly three values, oldest first, capped at 5,000 events.
+    source_note: >-
+      The 2026-08-29 changelog entry records that the documentation previously printed a fourth
+      value, "price_change", which never existed — a client matching on it discarded every event.
+    terms:
+      - term: initial
+      - term: baseline
+      - term: change
+  - name: envelope_metadata
+    description: The four contract fields merged into primary response bodies.
+    terms:
+      - term: contract_version
+        type: string
+      - term: request_id
+        type: string
+      - term: server_time
+        type: timestamp
+      - term: data_updated_at
+        type: timestamp
+  - name: co2_field_set
+    description: Emissions fields. The measured and derived figures must never be merged.
+    terms:
+      - term: co2
+        meaning: Measured.
+      - term: co2_estimated
+        meaning: Derived.
+      - term: co2_estimated_standard
+        meaning: The NEDC/WLTP test cycle the estimate is stated against.
+  - name: country_filter
+    description: Origin filter on the vehicle facets.
+    terms:
+      - term: europe
+        meaning: >-
+          An exclusion, not a list — every origin that is not overseas. Currently excludes KR and
+          JP. Rows with no recorded country are treated as European and are included. Pass explicit
+          ISO codes for strict membership.
+    spelling_caveat: The import calculator spells the United Kingdom UK where the vehicle facets spell it GB.
+  - name: image_status
+    description: Gallery entry state. Referenced on gallery entries and on search-row image annotations.
+    terms:
+      - term: pending
+        meaning: The photo has not been vaulted yet. Reported as a shortfall count rather than an error.
+  - name: boolean_state_flags
+    description: Two booleans that answer questions the rest of the payload cannot.
+    terms:
+      - term: is_blind
+        meaning: >-
+          The auction house publishes no bid at all, by design. The one case where current_price
+          null is a final answer rather than missing data. Most eCarsTrade auctions are blind.
+      - term: details_pending
+        meaning: >-
+          The listing's full detail payload has not been fetched from the source yet.
+          vehicle_details is omitted while it is true. Not an error.
+      - term: live_price_pending
+        meaning: The upstream live-price refresh missed the request budget and is still running. Read once more after ~2s.
+  - name: vehicle_details_keys
+    description: The normalized detail block that reconciles differently-named source payloads.
+    terms:
+      - term: documents
+      - term: inspection_reports
+      - term: option_reports
+      - term: car_reports
+      - term: service_history
+      - term: service_history_summary
+      - term: technical_inspection
+      - term: paperwork
+      - term: condition
+      - term: damages
+      - term: damage_comment
+      - term: technical_issues
+      - term: remarks
+      - term: is_damaged
+      - term: has_technical_issues
+      - term: estimated_repair_costs
+  - name: inspection_report_type
+    description: Types found in inspection_reports.
+    terms:
+      - term: auction_sheet
+        meaning: The graded Japanese auction-house sheet — the one substantial detail record japanauction publishes.
+  - name: openapi_tags
+    description: The eleven capability groups the OpenAPI document organises operations under.
+    terms:
+      - term: Search & discovery
+      - term: Filter facets
+      - term: Catalog
+      - term: SEO helpers
+      - term: Auctions & history
+      - term: Vehicle details
+      - term: Top offers
+      - term: European classifieds
+      - term: Market intelligence
+      - term: Import calculator
+      - term: Health & contract

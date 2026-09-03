@@ -1,0 +1,229 @@
+generated: '2026-09-01'
+method: derived
+source: openapi/thecarapi-openapi.json + https://thecarapi.com/docs/schema
+docs: https://thecarapi.com/docs/schema
+note: >-
+  The published OpenAPI 3.1 document declares no components.schemas — every response body is typed
+  only as `type: object` with an inline example — so this entity graph is derived from the
+  provider's own data dictionary (https://thecarapi.com/docs/schema), the sources page, and the
+  path/parameter shapes in the spec. It is a reading of the documented payloads, not a
+  transcription of a machine-readable schema, and is marked `derived` accordingly. The
+  authoritative machine-readable field lists are served at runtime by GET /api/contract, whose
+  `schemas` object publishes required and optional keys per response shape.
+runtime_schema_source:
+  operationId: get_api_contract
+  path: /api/contract
+  field: schemas
+  guidance: The provider tells clients to prefer this to hardcoding field lists.
+primary_key:
+  composite: [site_name, auction_id_str]
+  example: encar/38112900
+  caution: >-
+    auction_id (number) and auction_id_str (string) carry the same id, but japanauction ids exceed
+    2^53. Persist and address by auction_id_str.
+entities:
+  - name: AuctionListing
+    aka: [search result card, auction detail]
+    description: A vehicle lot at one of the seven auction sources. The central entity.
+    identifiers:
+      - auction_id_str
+      - auction_id
+      - vehicle_id
+    returned_by:
+      - get_api_search
+      - get_api_auction_site_slug_auction_id
+      - get_api_car_details
+      - post_api_car_details
+      - get_api_listVehicles
+      - post_api_listVehicles
+      - get_api_top_offers
+    key_fields:
+      - site_name
+      - clean_make
+      - clean_model
+      - registration_year
+      - mileage
+      - public_price_eur
+      - current_price
+      - buy_now_price
+      - final_price
+      - is_active
+      - is_blind
+      - details_pending
+      - auction_end_at
+      - steering
+      - manufacturer_slug
+      - model_group_slug
+  - name: Site
+    aka: [auction source]
+    description: One of the seven auction sources. A closed slug vocabulary, published live.
+    identifiers: [site_name]
+    returned_by: [get_api_sites]
+    members: [auto1, openlane, ecarstrade, schadeautos, copart, encar, japanauction]
+  - name: VehicleDetails
+    description: >-
+      Normalized specification/condition block that reconciles the differently-named source
+      payloads. Omitted while details_pending is true.
+    returned_by:
+      - get_api_auction_site_slug_auction_id
+      - get_api_car_details
+    sub_objects:
+      - documents
+      - inspection_reports
+      - option_reports
+      - car_reports
+      - service_history
+      - service_history_summary
+      - technical_inspection
+      - paperwork
+      - condition
+      - damages
+  - name: Gallery
+    aka: [vault_gallery, auction images]
+    description: CDN-hosted WebP image set for a lot, ordered, with served_url/width/height and a pending count.
+    returned_by:
+      - get_api_auction_images_site_slug_auction_id
+      - get_api_auction_site_slug_auction_id
+    note: >-
+      images[] on a search or listVehicles row is capped at the first 8 display-ordered entries and
+      is a card preview, never the full gallery.
+  - name: PriceHistoryEvent
+    description: One price event on a lot. event_type is one of initial, baseline, change. Oldest first, capped at 5,000 events.
+    returned_by: [get_api_auction_site_slug_auction_id_price_history]
+  - name: VinHistory
+    description: Cross-listing history for a VIN.
+    identifiers: [vin]
+    returned_by: [get_api_vin_vin_history]
+  - name: Manufacturer
+    description: Catalog-level brand entity, slug-addressable.
+    identifiers: [manufacturer_slug, brand id]
+    returned_by:
+      - get_api_catalog_manufacturers
+      - get_api_catalog_manufacturers_slug
+      - get_api_catalog_manufacturers_stats
+      - get_api_brands
+  - name: ModelGroup
+    description: Catalog-level model entity under a manufacturer, slug-addressable.
+    identifiers: [model_group_slug]
+    returned_by:
+      - get_api_catalog_model_groups
+      - get_api_catalog_model_groups_slug
+      - get_api_models
+      - get_load_models
+  - name: FacetDimension
+    description: A filterable dimension with cross-filtered counts — brands, models, years, fuels, gearboxes, countries, sites.
+    returned_by:
+      - get_api_facets
+      - get_api_brands
+      - get_api_models
+      - get_api_years
+      - get_api_fuels
+      - get_api_gearboxes
+      - get_api_countries
+      - get_api_sites
+  - name: ClassifiedListing
+    aka: [theparking listing]
+    description: >-
+      A retail classifieds row from one of 681 European origin portals. A separate dataset with its
+      own vocabulary — no bidding, no end date, no detail payload, no gallery, one remote thumbnail.
+    identifiers: [source_site]
+    returned_by:
+      - get_api_theparking_listings
+      - get_api_theparking_facets
+      - get_api_theparking_models
+  - name: MarketSnapshot
+    description: Precomputed price snapshot for a brand/model/year window — one retail (cars.bg), one auction.
+    returned_by:
+      - get_api_cars_bg_market
+      - get_api_auction_market
+    note: A 404 means no snapshot exists for that window, which is the normal answer for a thin combination.
+  - name: ImportCostEstimate
+    description: Landed-cost breakdown for one lot price and an origin/destination pair.
+    returned_by: [post_api_calculator_calculate]
+    fields:
+      - lot_price
+      - auction_fee
+      - trucking
+      - shipping
+      - our_fee
+      - subtotal_customs_value
+      - duty_rate
+      - duty_amount
+      - vat_rate
+      - vat_amount
+      - customs_agency
+      - custom_clearance_total
+      - estimated_total
+  - name: Contract
+    description: The deployment's machine-readable schema catalog, pagination limits and live-price capability.
+    returned_by: [get_api_contract]
+relationships:
+  - from: AuctionListing
+    to: Site
+    type: belongs_to
+    via: site_name
+  - from: AuctionListing
+    to: VehicleDetails
+    type: has_one
+    via: vehicle_details
+    note: Omitted while details_pending is true.
+  - from: AuctionListing
+    to: Gallery
+    type: has_one
+    via: vault_gallery
+  - from: AuctionListing
+    to: PriceHistoryEvent
+    type: has_many
+    via: 'GET /api/auction/{site_slug}/{auction_id}/price-history'
+  - from: AuctionListing
+    to: Manufacturer
+    type: belongs_to
+    via: manufacturer_slug
+  - from: AuctionListing
+    to: ModelGroup
+    type: belongs_to
+    via: model_group_slug
+  - from: AuctionListing
+    to: VinHistory
+    type: belongs_to
+    via: chassis_number
+    confidence: medium
+    note: The detail payload carries chassis_number; /api/vin/{vin}/history is addressed by VIN. The link is documented in prose rather than by a typed reference field.
+  - from: ModelGroup
+    to: Manufacturer
+    type: belongs_to
+    via: manufacturer_slug
+  - from: VehicleDetails
+    to: InspectionReport
+    type: has_many
+    via: inspection_reports
+    note: 'japanauction contributes type auction_sheet here — its one substantial detail record.'
+  - from: ClassifiedListing
+    to: Site
+    type: none
+    note: >-
+      Deliberately NOT related. The classifieds network is never merged into the auction feed,
+      never appears in /api/sites, and passing it as a site value returns 400. `theparking` is a
+      scope name, not a source name.
+  - from: MarketSnapshot
+    to: Manufacturer
+    type: belongs_to
+    via: brand
+    confidence: medium
+  - from: ImportCostEstimate
+    to: Site
+    type: belongs_to
+    via: site_name
+    note: site_name selects the fee model, reproducing the same arithmetic that computed that lot's buynow_final / current_final.
+id_conventions:
+  - pattern: '<site_slug>/<auction_id>'
+    scope: addressing a vehicle across the API
+  - pattern: slug
+    scope: manufacturer_slug and model_group_slug on the catalog routes
+  - note: >-
+      /api/car-details on the auto1 and japanauction sources takes the offer id/UUID rather than
+      the numeric auction id.
+  - note: >-
+      /api/search/auction-ids returns bare numeric auction_id values with no source attached, so
+      they are not unique across sources. It is a filter, not an addressing scheme.
+render: null

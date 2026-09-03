@@ -1,0 +1,109 @@
+# TheCarApi
+
+> A REST API for European and overseas vehicle auction inventory. One normalized schema over seven
+> auction sources — Auto1, OpenLane, Schadeautos, Copart Germany, eCarsTrade, Encar, and the
+> Japanese auction houses — plus 9.8M European retail classifieds listings from 681 portals
+> across 39 countries.
+
+TheCarApi provides normalized vehicle search, source-aware listing detail, CDN-hosted
+WebP image galleries, catalog and facet navigation, auction price history, market
+reference pricing, and a landed-cost import calculator. Vehicles are addressed by the
+stable pair `site_name/auction_id` (for example `encar/38112900`). Authentication is
+via an `X-API-Key` header or `Authorization: Bearer`. Every plan includes the full
+product surface; plans differ only by monthly request volume.
+
+TheCarApi is a data and inventory API. It does not provide bidding accounts or purchase
+rights on any source platform.
+
+## Site
+
+- [TheCarApi](https://thecarapi.com): Product overview: multi-source auction inventory API, live demo of the search payload, architecture, reliability metrics and pricing.
+- [API Capabilities](https://thecarapi.com/product): The eight capability groups of the API and what each returns. One flat plan unlocks all of them — no feature gating.
+- [Auction Sources](https://thecarapi.com/sources): Per-platform detail for each supported auction source: coverage, sync frequency, available endpoints and sample payloads.
+- [Use Cases](https://thecarapi.com/use-cases): Workflows by customer type, with the endpoint combination each one uses.
+- [Auction Data API vs Building Scrapers In-House](https://thecarapi.com/vs-diy-scraping): Build versus buy comparison covering proxy overhead, selector maintenance, schema unification and anti-bot handling.
+- [Market Intelligence](https://thecarapi.com/market-data): Market reference pricing, top-offer signals and the retail classifieds surface used to compare wholesale against retail.
+- [Pricing](https://thecarapi.com/pricing): The single unlimited plan, the free evaluation tier, and custom solutions on request.
+- [Contact & API Access Requests](https://thecarapi.com/contact): Request API access or contact the team.
+- [Privacy Policy](https://thecarapi.com/privacy): Privacy policy.
+- [Terms of Service](https://thecarapi.com/terms): Terms of service.
+- [Blog](https://thecarapi.com/blog): 13 in-depth articles on auction data engineering, sources, market intelligence and integration.
+- [API Documentation](https://thecarapi.com/docs): API documentation index — authentication, conventions and endpoint reference.
+- [Authentication & scopes](https://thecarapi.com/docs/authentication): Authentication & scopes endpoint reference.
+- [Responses & pagination](https://thecarapi.com/docs/conventions): Responses & pagination endpoint reference.
+- [Errors & limits](https://thecarapi.com/docs/errors): Errors & limits endpoint reference.
+- [Sources & site slugs](https://thecarapi.com/docs/sources): Sources & site slugs endpoint reference.
+- [Fields by source](https://thecarapi.com/docs/fields-by-source): Fields by source endpoint reference.
+- [CO2 & emissions](https://thecarapi.com/docs/co2): CO2 & emissions endpoint reference.
+- [Live prices](https://thecarapi.com/docs/live-prices): Live prices endpoint reference.
+- [Data dictionary](https://thecarapi.com/docs/schema): Data dictionary endpoint reference.
+- [Search & discovery](https://thecarapi.com/docs/search): Search & discovery endpoint reference.
+- [Filter facets](https://thecarapi.com/docs/facets): Filter facets endpoint reference.
+- [Catalog](https://thecarapi.com/docs/catalog): Catalog endpoint reference.
+- [Auctions & history](https://thecarapi.com/docs/auctions): Auctions & history endpoint reference.
+- [Vehicle details](https://thecarapi.com/docs/car-details): Vehicle details endpoint reference.
+- [Top offers](https://thecarapi.com/docs/top-offers): Top offers endpoint reference.
+- [European classifieds](https://thecarapi.com/docs/theparking): European classifieds endpoint reference.
+- [Market intelligence](https://thecarapi.com/docs/market): Market intelligence endpoint reference.
+- [Import calculator](https://thecarapi.com/docs/calculator): Import calculator endpoint reference.
+- [SEO helpers](https://thecarapi.com/docs/seo): SEO helpers endpoint reference.
+- [Health & contract](https://thecarapi.com/docs/ops): Health & contract endpoint reference.
+- [Code examples](https://thecarapi.com/docs/code-examples): Code examples endpoint reference.
+- [Recipes](https://thecarapi.com/docs/recipes): Recipes endpoint reference.
+- [Agents & machine formats](https://thecarapi.com/docs/agents): Agents & machine formats endpoint reference.
+- [System Status & Uptime](https://thecarapi.com/status): Platform health, per-source indexing coverage and latency figures.
+- [API Changelog & Contract Versions](https://thecarapi.com/changelog): Dated release history and schema contract versions.
+
+## Articles
+
+- [SEO for inventory-driven sites: what changes when AI crawlers cannot run JavaScript](https://thecarapi.com/blog/seo-for-data-driven-sites): Vehicle marketplaces live on organic search, and a client-rendered SPA shows crawlers an empty div. What to prerender, how to handle hundreds of thousands of listing URLs, and what AI crawlers actually read.
+- [Integrating a vehicle auction API: pagination, caching, retries and rate limits](https://thecarapi.com/blog/auction-api-integration-guide): The practical mechanics of consuming an auction inventory API in production: pagination depth, cache TTLs per data type, retry policy, idempotency, and the failure modes worth handling up front.
+- [Building a used car marketplace without owning inventory](https://thecarapi.com/blog/build-used-car-marketplace): An architecture walkthrough for launching a vehicle marketplace on a third-party inventory feed: data model, search, images, the cold-start problem, and what to build yourself.
+- [Used car market value: wholesale prices, retail asking prices, and the spread](https://thecarapi.com/blog/used-car-market-value-comparables): Auction prices and classifieds asking prices measure different things. How to combine them into a defensible market value, and why an asking price is not a transaction price.
+- [Vehicle images at scale: why hotlinking auction galleries fails](https://thecarapi.com/blog/vehicle-image-cdn-api): Auction listings carry 20–60 photographs each. Why source URLs expire, what hotlink protection does to your frontend, and what an image vault has to provide to be worth the storage.
+- [Salvage and damaged vehicle data: fields, sources and pitfalls](https://thecarapi.com/blog/salvage-damaged-vehicle-data): Damaged stock is a different market with a different buyer and no shared damage vocabulary. What the data contains across Copart Germany and Schadeautos, and how to model it without inventing severity.
+- [Car price history: reading auction price movement over time](https://thecarapi.com/blog/car-price-history-api): Price history turns a listing into a signal. How auction price series are actually shaped, the mistakes that make them useless, and how to build comparables and valuation on top.
+- [Encar data: reading the Korean used car market in English](https://thecarapi.com/blog/encar-korean-used-car-data): Encar is South Korea's dominant used-vehicle platform and a major export source. What its listings contain, why Korean market data behaves differently, and how to consume it without reading Korean.
+- [OpenLane auction data: coverage, lineage, and programmatic access](https://thecarapi.com/blog/openlane-auction-data): OpenLane consolidated several European remarketing brands into one platform. What that means for data consumers, how its inventory differs from dealer-sourced wholesale, and how to pull it programmatically.
+- [Auto1 inventory data: what exists, what does not, and the options](https://thecarapi.com/blog/auto1-inventory-data-access): Developers looking for an Auto1 API find no public self-serve endpoint. Here is what Auto1 actually is, why programmatic access is structured the way it is, and the realistic routes to Auto1 inventory data.
+- [Vehicle data normalization: turning seven auction feeds into one schema](https://thecarapi.com/blog/vehicle-data-normalization): How to normalize make, model, trim, fuel, gearbox and damage across auction platforms that each invented their own taxonomy — and why keeping the raw payload matters more than getting the mapping right.
+- [Scraping car auction sites: the real cost, versus buying the data](https://thecarapi.com/blog/scraping-car-auction-sites-vs-api): A line-by-line cost model for building in-house auction scrapers: proxies, storage, engineering time, and the maintenance tail nobody budgets for. Plus the cases where building it yourself is genuinely the right call.
+- [Car auction API: a practical guide to live vehicle auction data](https://thecarapi.com/blog/car-auction-api-guide): What a car auction API actually returns, which European auction sources are reachable programmatically, how listings are identified across platforms, and what to check before you commit to a data provider.
+
+## API documentation
+
+- [Getting started](https://thecarapi.com/docs): What the API serves, the two datasets it exposes, the shape of a request, and a first call you can paste into a terminal.
+- [Authentication & scopes](https://thecarapi.com/docs/authentication): Three interchangeable ways to present a key, the restrictions a key can carry, and the scope groups that gate each endpoint.
+- [Responses & pagination](https://thecarapi.com/docs/conventions): The response envelope, caching and conditional requests, compression, pagination aliases, and rate-limit headers.
+- [Errors & limits](https://thecarapi.com/docs/errors): Status codes, the error body shape, and which failures are worth retrying.
+- [Sources & site slugs](https://thecarapi.com/docs/sources): The `site` slug vocabulary, what each source publishes, and why the classifieds network is not one of them.
+- [Fields by source](https://thecarapi.com/docs/fields-by-source): What each of the seven auction sources actually publishes — the condition-data coverage matrix, the source-specific traps, and how to write code that survives the differences.
+- [CO2 & emissions](https://thecarapi.com/docs/co2): The difference between the measured and estimated CO2 fields, the NEDC/WLTP split that makes a standard tag mandatory, which sources publish a figure, and how to render it without overclaiming.
+- [Live prices](https://thecarapi.com/docs/live-prices): Cycle prices versus the at-request bid read on running auctions, and how to read `live_price` and `live_price_pending`.
+- [Data dictionary](https://thecarapi.com/docs/schema): Search card and auction detail field lists, the normalized `vehicle_details` block, per-source coverage, and what is never exposed.
+- [Search & discovery](https://thecarapi.com/docs/search): Search live auction inventory, then resolve lightweight full-text matches. Ended lots are hidden by default; is_active=false / include_ended=true shows them as well as live ones.
+- [Filter facets](https://thecarapi.com/docs/facets): Discover live filter values and counts. Every facet endpoint accepts the search filters, so a facet describes whatever slice of inventory you are looking at rather than the whole of it — each dimension ignoring only its own filter, so a user can switch brands without the option disappearing. Counts and the totals /api/search reports for the same filters cannot disagree. Facet responses cache for about 600 seconds, and a filter sidebar can read every flat dimension in one call with /api/facets.
+- [Catalog](https://thecarapi.com/docs/catalog): Build slug-addressable manufacturer and model-group navigation. All catalog list routes paginate with a default limit of 50 and are capped at offset 5000 — a deeper page is a 400 naming the limit. They carry page, page_size and max_page.
+- [Auctions & history](https://thecarapi.com/docs/auctions): Retrieve source-aware listing detail, galleries, price changes, and VIN history. A running openlane or ecarstrade auction has its bid read from the auction house at the moment you request the detail — nothing needs to be passed to enable it. Every other listing is served at its cycle price, refreshed at least every twelve hours.
+- [Vehicle details](https://thecarapi.com/docs/car-details): Fetch a full source payload from cache or, when needed, from the upstream source.
+- [Top offers](https://thecarapi.com/docs/top-offers): Live auctions our pipeline judged to be priced below their market reference. Same deals as /api/search?sort=top_offers, but each card additionally carries the reference the verdict was made against.
+- [European classifieds](https://thecarapi.com/docs/theparking): A retail price surface of roughly 9.8M live listings gathered from 681 origin portals — national classifieds sites, dealer groups and manufacturer stock pages — across 39 European countries: mobile.de, kleinanzeigen.de, autoscout24, leboncoin.fr, lacentrale.fr, autosupermarket.it, njuskalo.hr and hundreds more. Every listing keeps its origin portal in source_site, so the same feed answers a national question and a portal-level one. These are retail listings, not auction inventory: no bidding, no auction end date, no detail payload and no gallery, just a single remote thumbnail per listing. They live in their own tables with their own vocabulary (seller type, origin portal), which is why they get their own query surface instead of a site slug on /api/search. Ended and paid-placement ("promoted") rows are excluded from every response, and all three endpoints return 503 while the dataset has not been built yet. Scope: theparking — that is the scope name in the path, not the name of a source.
+- [Market intelligence](https://thecarapi.com/docs/market): Precomputed price snapshots for a brand, model, and year window — one for the Bulgarian retail market, one for our own auction inventory. Scope: market. Neither is enabled on a new key by default; ask for them. Both are read-only lookups into snapshots built by a pipeline on its own schedule. A 404 therefore means "no snapshot exists for that window", which is the normal answer for a thin brand/model/year combination — not an error to retry. Neither route carries envelope metadata; read X-Request-ID from the header.
+- [Import calculator](https://thecarapi.com/docs/calculator): Estimate the landed cost of importing a vehicle. These are estimates, not a binding quote.
+- [SEO helpers](https://thecarapi.com/docs/seo): Build popular landing pages and resolve brand/model URL slugs.
+- [Health & contract](https://thecarapi.com/docs/ops): Check service dependencies and inspect the API index.
+- [Code examples](https://thecarapi.com/docs/code-examples): Minimal clients in cURL, TypeScript, Python and PHP, plus recipes for pagination, conditional requests and detail pages.
+- [Recipes](https://thecarapi.com/docs/recipes): Six end-to-end flows that cover most of what the API is for. Each is a complete sequence, not a fragment.
+- [Agents & machine formats](https://thecarapi.com/docs/agents): Every page of this reference as Markdown, plain text, JSON and OpenAPI — and how to point a coding agent at it.
+
+## Machine-readable formats
+
+- API reference, Markdown: [thecarapi-api-reference.md](https://thecarapi.com/docs/thecarapi-api-reference.md)
+- API reference, plain text: [thecarapi-api-reference.txt](https://thecarapi.com/docs/thecarapi-api-reference.txt)
+- API reference, JSON: [thecarapi-api-reference.json](https://thecarapi.com/docs/thecarapi-api-reference.json)
+- OpenAPI 3.1 document: [openapi.json](https://thecarapi.com/openapi.json)
+- Documentation index for agents: [docs/llms.txt](https://thecarapi.com/docs/llms.txt)
+- Every docs page is available as Markdown at `https://thecarapi.com/docs/<section>.md`
+- Every article is available as Markdown at `https://thecarapi.com/blog/<slug>.md`
+- Full text of all articles: [llms-full.txt](https://thecarapi.com/llms-full.txt)
+- [sitemap.xml](https://thecarapi.com/sitemap.xml)

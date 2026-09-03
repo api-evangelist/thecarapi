@@ -1,0 +1,145 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/changelog
+url: https://thecarapi.com/changelog
+feed: null
+feed_note: No RSS/Atom or JSON feed for the changelog was found; it is an HTML page only.
+scheme: dated-contract-version
+current_version: '2026-08-19'
+version_field: contract_version
+entry_count_captured: 12
+window: 2026-03-01 to 2026-08-29 (the full published history at time of capture)
+categories:
+  - feature
+  - improvement
+  - fix
+  - breaking
+entries:
+  - date: '2026-08-29'
+    type: fix
+    contract_version: '2026-08-19'
+    title: Documentation audit — three things this reference stated were wrong
+    breaking: false
+    additions: false
+    highlights:
+      - 'Documentation only: no code changed, no field moved, no parameter changed meaning.'
+      - 'price-history event_type takes initial | baseline | change — the previously documented "price_change" value never existed, so a client matching on it discarded every event.'
+      - '/api/search/auction-ids returns bare numeric ids, not site:id pairs; it is a filter, not an addressing scheme.'
+      - Pagination depth was documented more restrictively than it behaves — /api/listVehicles has no offset cap either.
+      - 'Newly documented: the japanauction auction sheet, vehicle_id / manufacturer_slug / model_group_slug / fuel_type, which endpoints omit envelope metadata, and a Recipes page with six complete flows.'
+  - date: '2026-08-28'
+    type: fix
+    contract_version: '2026-08-19'
+    title: Accuracy fixes to brand matching and result counting — contract unchanged
+    breaking: false
+    additions: false
+    behavioural_change: true
+    highlights:
+      - 'A brand filter now matches the brand identity, not the published spelling — ?brand=vw, ?brand=VW and ?brand=175 return the same inventory. Branded counts rise; re-baseline pinned snapshot tests.'
+      - One entry per model in the facet catalogue — models are merged on identity rather than printed label.
+      - A filtered search total now matches the rows it returns; total gets slightly smaller and correct for filtered searches.
+  - date: '2026-08-27'
+    type: improvement
+    contract_version: '2026-08-19'
+    title: Cross-filtered facets, per-option counts, capped card galleries and estimated_value_eur
+    breaking: false
+    additions: true
+    highlights:
+      - 'Non-additive: GET /load-models no longer merges contract_version, request_id, server_time and data_updated_at into its body — its payload keys are brand names. Read X-Request-ID from the header.'
+      - 'New auction-detail field estimated_value_eur (ecarstrade only, null elsewhere and for ~86% of eCarsTrade lots). An estimate, not a payable price.'
+      - Facet counts are now cross-filtered — each dimension ignores only its own filter.
+      - 'Per-option counts: year_counts, fuel_counts, gearbox_counts, country_counts.'
+      - Listing endpoints cap embedded galleries at 8 photos; read vault_gallery or /api/auction-images for the full set.
+      - /image-vault/* now answers with a 302 to a pre-signed object URL instead of streaming bytes.
+  - date: '2026-08-19'
+    type: feature
+    contract_version: '2026-08-19'
+    title: Contract version 2026-08-19 — combined facets, embedded galleries, gzip and conditional requests
+    breaking: false
+    additions: true
+    highlights:
+      - 'New GET /api/facets returns six dimensions in one response and bills one quota unit instead of six.'
+      - A facet dimension that cannot be served is reported under errors while every other dimension returns normally.
+      - GET /api/search accepts is_active as the documented spelling of the ended-lot switch.
+      - GET /api/auction/{site}/{id} now embeds vault_gallery, so a detail page is one request instead of two.
+      - Accept-Encoding gzip on any response over 2 KB.
+      - /api/search now carries a weak ETag; echo it in If-None-Match for a 304.
+  - date: '2026-08-18'
+    type: breaking
+    contract_version: '2026-08-18'
+    title: Contract version 2026-08-18 — price fields are JSON numbers
+    breaking: true
+    additions: true
+    highlights:
+      - 'BREAKING: price fields are now always JSON numbers. They were previously strings on a normal read and numbers whenever a live price had been refreshed. A statically typed client declaring them as strings has to retype them.'
+      - 'Affected: start_price, current_price, current_final, current_tax, current_tax_delivery, buy_now_price, buynow_final, buynow_tax, buynow_tax_delivery, final_price, public_price_eur, current_bgn, buynow_bgn.'
+      - /api/car-details now returns the price fields (previously none), so the two detail endpoints agree.
+      - 'New field live_price_pending: the upstream refresh missed the request budget; read once more after ~2s.'
+  - date: '2026-08-17'
+    type: feature
+    contract_version: '2026-08-17'
+    title: Contract version 2026-08-17 — live prices on running auctions
+    breaking: false
+    additions: true
+    highlights:
+      - A running openlane or ecarstrade auction has its bid refreshed from the auction house while the request is served — no separate endpoint, no parameter.
+      - 'A refreshed response carries live_price {price, currency, source, fetched_at} and recomputes current_price, current_final, current_tax, current_tax_delivery and public_price_eur.'
+      - 'GET /api/contract gains a live_prices block {enabled, sites, ttl_seconds}.'
+      - Classifieds listings feed gained source_exclude, include_total, total_capped and total_unavailable.
+  - date: '2026-08-14'
+    type: feature
+    contract_version: '2026-08-14'
+    title: Contract version 2026-08-14 — Japanese auctions, vehicle_details, account-scoped fields removed
+    breaking: false
+    additions: true
+    highlights:
+      - 'Added the Japanese auction houses (USS, ARAI, AUCNET, BAYAUC, CAA) as a seventh source under the slug japanauction.'
+      - Added the normalized vehicle_details block to /api/auction/{site}/{id} and /api/car-details.
+      - /api/countries now returns JP; country=europe is an exclusion, not a list.
+      - 'Account-scoped commercial data is now stripped at the response boundary: auction fees, bid history, transport, delivery/selfpickup keys and buyer-account identity. Email addresses redacted from free text.'
+  - date: '2026-08-06'
+    type: feature
+    title: European retail classifieds feed
+    breaking: false
+    additions: true
+    highlights:
+      - 'Added /api/theparking/listings, /api/theparking/facets and /api/theparking/models under the new theparking scope.'
+      - Retail classifieds from 681 origin portals across 39 European countries, with seller type and origin portal on every row.
+  - date: '2026-07-15'
+    type: feature
+    title: eCarsTrade added as an auction source
+    breaking: false
+    additions: true
+    highlights:
+      - eCarsTrade is now a valid site value for search, auction detail, car-details and the calculator fee model.
+      - Published /api/top-offers with the market_reference each verdict was made against.
+  - date: '2026-06-10'
+    type: feature
+    contract_version: '2026-06-10'
+    title: Contract version 2026-06-10
+    breaking: false
+    additions: true
+    highlights:
+      - 'Published contract version 2026-06-10 with pagination caps (limit 100, offset 5000).'
+      - Documented public-read site bypass for GET inventory, facets, catalog, SEO, images and health.
+  - date: '2026-05-20'
+    type: improvement
+    title: Image vault & gallery API scale
+    breaking: false
+    additions: true
+    highlights:
+      - Image vault past 50M+ ready WebP assets with CDN served_url on the gallery endpoint.
+      - Encar async/sync image prefetch endpoints for on-demand boost.
+  - date: '2026-03-01'
+    type: feature
+    title: Multi-source public inventory
+    breaking: false
+    additions: true
+    highlights:
+      - Unified public feed across Auto1, OpenLane, Schadeautos and Copart DE.
+      - 'Normalized clean_make / clean_model / fuel_group / gearbox_group / public_price_eur.'
+      - Archive pipeline for inactive lots (full row + archived_at).
+observations:
+  - Every entry states explicitly whether the schema contract moved, which is unusually disciplined for a changelog.
+  - Exactly one breaking release in the published history (2026-08-18), announced on the day it shipped with no notice window.
+  - The 2026-08-28 entry is a rare and honest class of entry — a behavioural correction that changes the numbers clients see without moving the contract, with an explicit instruction to re-baseline snapshot tests.

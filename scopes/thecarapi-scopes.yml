@@ -1,0 +1,82 @@
+generated: '2026-09-01'
+method: searched
+source: https://thecarapi.com/docs/authentication
+docs: https://thecarapi.com/docs/authentication
+model: api-key-scopes
+oauth2: false
+note: >-
+  TheCarApi publishes a real, named scope reference, but the scopes are attached to an API key
+  rather than issued through an OAuth2 authorization flow. There are no oauth2 securitySchemes in
+  the OpenAPI and no authorization/token endpoints. Scopes are granted per endpoint by the
+  operator; a request to a route the key does not cover returns 403.
+wildcard: '*'
+wildcard_note: '`*` grants every route. A scope may also be a literal URL rule rather than a group.'
+scope_count: 10
+scopes:
+  - name: search
+    description: Inventory search, filter facets (individually or combined via /api/facets), sources, and the full model catalog.
+  - name: catalog
+    description: Manufacturer and model-group catalog.
+  - name: seo
+    description: Popular searches and brand/model slug resolution.
+  - name: auctions
+    description: Auction detail, images, price history, and VIN history.
+  - name: details
+    description: Full vehicle details, including upstream fetches.
+  - name: top-offers
+    description: Auctions priced below their market reference.
+  - name: theparking
+    description: European classifieds feed, facets, and models.
+  - name: market
+    description: Cars.bg and auction market price snapshots.
+  - name: calculator
+    description: Import cost calculator and supported countries.
+  - name: ops
+    description: >-
+      Service health, the contract, and the API index. The provider warns that this group also
+      covers internal routes outside the published contract, which are unversioned and may change
+      without a changelog entry.
+legacy_scopes:
+  - name: public
+    status: legacy-compatibility
+    description: >-
+      Legacy compatibility bundle — search facets, catalog, SEO, auctions, calculator and health —
+      preserved for older integrations. New keys are issued against the groups above.
+default_grant:
+  enabled_by_default:
+    - /api/search
+    - /api/brands
+    - /api/models
+    - /api/years
+    - /api/fuels
+    - /api/countries
+    - /api/gearboxes
+    - /api/sites
+    - /load-models
+    - /api/facets
+    - /api/catalog/*
+    - /api/seo/*
+    - /api/auction/*
+    - /api/auction-images/*
+    - /api/calculator/*
+    - /api/top-offers
+    - /api/theparking/*
+    - /api/car-details
+    - /api/contract
+    - /api/health
+    - /
+  granted_on_request:
+    - /api/vin/{vin}/history
+    - /api/cars-bg-market
+    - /api/auction-market
+    - /api/listVehicles
+    - /listVehicles
+    - /api/search/auction-ids
+  no_key_required:
+    - /api/health/live
+    - /api/health/ready
+discovery:
+  startup_check: GET /api/contract
+  guidance: >-
+    The provider tells clients to call /api/contract once at process start and fail loudly if the
+    surface they depend on is absent — a missing scope is a deployment problem, not a runtime one.

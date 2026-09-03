@@ -1,0 +1,83 @@
+generated: '2026-09-01'
+method: probed
+source: live GET probes of /.well-known/* on every apis.yml baseURL host and the docs host
+note: >-
+  No /.well-known document is served on either host. thecarapi.com answers every /.well-known path
+  with an HTTP 404 carrying the site's SPA HTML shell; api.thecarapi.com answers with a plain
+  HTTP 404. No security.txt, no api-catalog, no OAuth/OIDC metadata, no agent card, no ai-plugin.
+  Recorded as an absence — no WellKnown or SecurityTxt pointer is emitted, because none of these
+  paths returned a document.
+hosts:
+  - host: thecarapi.com
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        file: null
+      - path: /.well-known/api-catalog
+        status: 404
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        file: null
+      - path: /.well-known/mcp.json
+        status: 404
+        file: null
+      - path: /.well-known/aauth-resource.json
+        status: 404
+        file: null
+  - host: api.thecarapi.com
+    documents:
+      - path: /.well-known/security.txt
+        status: 404
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        file: null
+      - path: /.well-known/api-catalog
+        status: 404
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        file: null
+      - path: /.well-known/mcp.json
+        status: 404
+        file: null
+      - path: /.well-known/aauth-resource.json
+        status: 404
+        file: null
+related:
+  robots_txt:
+    url: https://thecarapi.com/robots.txt
+    status: 200
+    note: >-
+      Not a /.well-known document, but the provider's only published machine-readable agent policy.
+      It explicitly allows AI search and citation crawlers (OAI-SearchBot, ChatGPT-User,
+      PerplexityBot, Claude-SearchBot, Claude-User, Applebot) and disallows bulk training
+      harvesters (CCBot, Bytespider, Amazonbot, meta-externalagent). /api/ is disallowed to all.

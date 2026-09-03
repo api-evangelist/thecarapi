@@ -1,0 +1,20 @@
+generated: '2026-09-01'
+method: probed
+source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
+hosts:
+- host: thecarapi.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct  8 11:06:43 2026 GMT
+  hsts: false
+- host: api.thecarapi.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct 10 16:02:07 2026 GMT
+  hsts: null
+domains:
+- domain: thecarapi.com
+  dnssec: false
+  caa: []
+  spf: false
+  dmarc: false
