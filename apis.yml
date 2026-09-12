@@ -81,6 +81,8 @@ generated:
   confidence: 95
   at: '2026-09-01T19:53:13.514Z'
 common:
+- type: Website
+  url: https://thecarapi.com/
 - type: DomainSecurity
   url: security/thecarapi-domain-security.yml
 - type: Authentication
