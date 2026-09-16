@@ -41,36 +41,215 @@ tags:
   - Korea
   - Japan Auctions
 apis:
-  - name: TheCarApi REST API
-    description: >-
-      REST/JSON API for multi-source vehicle auction inventory, search, facets, auction detail and price history, VIN
-      history, market intel, classifieds, and import cost calculation. API key required for live calls; docs and specs
-      are unauthenticated.
-    humanURL: https://thecarapi.com/docs
-    baseURL: https://api.thecarapi.com
-    tags:
-      - Automotive
-      - Vehicle Data
-      - Car Auctions
-      - Used Cars
-      - Vehicle Inventory
-      - Classifieds
-      - Market Intelligence
-      - Pricing
-      - VIN
-      - Image CDN
-      - Europe
-      - Korea
-      - Japan Auctions
-    properties:
-      - type: OpenAPI
-        url: https://thecarapi.com/openapi.json
-      - type: PostmanCollection
-        url: https://thecarapi.com/thecarapi.postman_collection.json
-      - type: Documentation
-        url: https://thecarapi.com/docs
-      - type: LLMsTxt
-        url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-auctions-history-api
+  name: TheCarApi Auctions & history API
+  description: >-
+    Retrieve source-aware listing detail, galleries, price changes, and VIN history. A running openlane
+    or ecarstrade auction has its bid read from the auction house at the moment you request the detail
+    — nothing needs to be passed to enable it. Every other listing is served at its cycle price, refreshed
+    at least every twelve hours.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Auctions & history
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-auctions-history-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-catalog-api
+  name: TheCarApi Catalog API
+  description: >-
+    Build slug-addressable manufacturer and model-group navigation. All catalog list routes paginate with
+    a default limit of 50 and are capped at offset 5000 — a deeper page is a 400 naming the limit. They
+    carry page, page_size and max_page.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Catalog
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-catalog-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-european-classifieds-api
+  name: TheCarApi European classifieds API
+  description: >-
+    A retail price surface of roughly 9.8M live listings gathered from 681 origin portals — national classifieds
+    sites, dealer groups and manufacturer stock pages — across 39 European countries: mobile.de, kleinanzeigen.de,
+    autoscout24, leboncoin.fr, lacentrale.fr, autosupermarket.it, njuskalo.hr and hundreds more. Every
+    listing keeps its origin portal in source_site, so the same feed answers a national question and a
+    portal-level one. These are retail listings, not auction inventory: no bidding, no auction end date,
+    no detail payload and no gallery, just a single remote thumbnail per listing. They live in their own
+    tables with their own vocabulary (seller type, origin portal), which is why they get their own query
+    surface instead of a site slug on /api/search. Ended and paid-placement ("promoted") rows are excluded
+    from every response, and all three endpoints return 503 while the dataset has not been built yet.
+    Scope: theparking — that is the scope name in the path, not the name of a source.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - European classifieds
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-european-classifieds-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-filter-facets-api
+  name: TheCarApi Filter facets API
+  description: >-
+    Discover live filter values and counts. Every facet endpoint accepts the search filters, so a facet
+    describes whatever slice of inventory you are looking at rather than the whole of it — each dimension
+    ignoring only its own filter, so a user can switch brands without the option disappearing. Counts
+    and the totals /api/search reports for the same filters cannot disagree. Facet responses cache for
+    about 600 seconds, and a filter sidebar can read every flat dimension in one call with /api/facets.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Filter facets
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-filter-facets-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-health-contract-api
+  name: TheCarApi Health & contract API
+  description: Check service dependencies and inspect the API index.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Health & contract
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-health-contract-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-import-calculator-api
+  name: TheCarApi Import calculator API
+  description: >-
+    Estimate the landed cost of importing a vehicle. These are estimates, not a binding quote.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Import calculator
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-import-calculator-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-market-intelligence-api
+  name: TheCarApi Market intelligence API
+  description: >-
+    Precomputed price snapshots for a brand, model, and year window — one for the Bulgarian retail market,
+    one for our own auction inventory. Scope: market. Neither is enabled on a new key by default; ask
+    for them. Both are read-only lookups into snapshots built by a pipeline on its own schedule. A 404
+    therefore means "no snapshot exists for that window", which is the normal answer for a thin brand/model/year
+    combination — not an error to retry. Neither route carries envelope metadata; read X-Request-ID from
+    the header.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Market intelligence
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-market-intelligence-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-seo-helpers-api
+  name: TheCarApi SEO helpers API
+  description: Build popular landing pages and resolve brand/model URL slugs.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - SEO helpers
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-seo-helpers-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-top-offers-api
+  name: TheCarApi Top offers API
+  description: >-
+    Live auctions our pipeline judged to be priced below their market reference. Same deals as /api/search?sort=top_offers,
+    but each card additionally carries the reference the verdict was made against.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Top offers
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-top-offers-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-vehicle-details-api
+  name: TheCarApi Vehicle details API
+  description: Fetch a full source payload from cache or, when needed, from the upstream source.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Vehicle details
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-vehicle-details-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
+- aid: thecarapi:thecarapi-search-and-discovery-api
+  name: TheCarApi Search and Discovery API
+  description: >-
+    Search live auction inventory, then resolve lightweight full-text matches. Ended lots are hidden by
+    default; is_active=false / include_ended=true shows them as well as live ones.
+  humanURL: https://thecarapi.com/docs
+  baseURL: https://api.thecarapi.com
+  tags:
+  - Search and Discovery
+  properties:
+  - type: OpenAPI
+    url: openapi/thecarapi-search-and-discovery-api-openapi.yml
+  - type: PostmanCollection
+    url: https://thecarapi.com/thecarapi.postman_collection.json
+  - type: Documentation
+    url: https://thecarapi.com/docs
+  - type: LLMsTxt
+    url: https://thecarapi.com/llms.txt
 maintainers:
   - FN: TheCarApi Support
     email: api@thecarapi.com
