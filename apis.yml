@@ -38,6 +38,20 @@ tags:
   - VIN
   - Image CDN
   - Europe
+  - South Korea
+  - Japan Auctions
+tags_raw:
+  - Automotive
+  - Vehicle Data
+  - Car Auctions
+  - Used Cars
+  - Vehicle Inventory
+  - Classifieds
+  - Market Intelligence
+  - Pricing
+  - VIN
+  - Image CDN
+  - Europe
   - Korea
   - Japan Auctions
 apis:
@@ -172,6 +186,8 @@ apis:
   humanURL: https://thecarapi.com/docs
   baseURL: https://api.thecarapi.com
   tags:
+  - Market Intelligence
+  tags_raw:
   - Market intelligence
   properties:
   - type: OpenAPI
@@ -240,6 +256,8 @@ apis:
   humanURL: https://thecarapi.com/docs
   baseURL: https://api.thecarapi.com
   tags:
+  - Search & Discovery
+  tags_raw:
   - Search and Discovery
   properties:
   - type: OpenAPI
