@@ -1,0 +1,314 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Market intelligence API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Market Intelligence
+  description: Precomputed price snapshots for a brand, model, and year window — one for the Bulgarian retail market, one for our own auction inventory.
+  externalDocs:
+    url: https://thecarapi.com/docs/market
+paths:
+  /api/cars-bg-market:
+    get:
+      operationId: get_api_cars_bg_market
+      summary: Cars.bg Bulgarian retail market snapshot
+      description: 'Cars.bg Bulgarian retail market snapshot.
+
+
+        Cars.bg (Bulgarian retail market) snapshot: what cars of this specification are asked for on the Bulgarian classifieds market. This is the reference the top-offers verdicts are ultimately measured against. brand/model/year missing → 400. flex outside 0–10 → 400. Brand or model that the matcher cannot resolve → 404 (Unknown brand / Unknown model). Resolved fine but no snapshot built for that window → 404. The market dataset being unavailable altogether → 503. No envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — year_from / year_to (integer): The window year ± flex actually resolved to. listing_count (integer): How many retail listings the aggregate is built from. Read this first — a median over four cars is not a market price. avg_price_eur / median_price_eur / min_price_eur / max_price_eur (number): EUR aggregates as JSON numbers. Prefer the median; retail asking prices have a long right tail. offers (object[]): The listings behind the aggregate. raw_matches (object[]): Everything the model matcher considered, including rows the aggregate excluded. Useful for auditing a surprising number. computed_at / updated_at (timestamp): When the snapshot was built. It is not recomputed per request.'
+      tags:
+      - Market Intelligence
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: market
+      x-examples:
+      - GET https://api.thecarapi.com/api/cars-bg-market?brand=BMW&model=320d&year=2019
+      - GET https://api.thecarapi.com/api/cars-bg-market?make=Audi&model=A4&year=2020&flex=2
+      parameters:
+      - name: brand
+        in: query
+        required: true
+        description: 'Brand name. Either spelling. Resolved through a fuzzy brand matcher, so display names work. Value comes from: /api/brands -> brands[].name'
+        schema:
+          type: string
+        example: BMW
+      - name: make
+        in: query
+        required: true
+        description: 'Brand name. Either spelling. Resolved through a fuzzy brand matcher, so display names work. Value comes from: /api/brands -> brands[].name'
+        schema:
+          type: string
+        example: BMW
+      - name: model
+        in: query
+        required: true
+        description: 'Model name. Resolved to one or more catalogue model ids. Value comes from: /api/models?brand=bmw -> models[].name'
+        schema:
+          type: string
+        example: 320d
+      - name: year
+        in: query
+        required: true
+        description: 'The centre year. Value comes from: Centre year chosen by your application.'
+        schema:
+          type: integer
+        example: '2019'
+      - name: flex
+        in: query
+        required: false
+        description: 'Year tolerance ± (0–10, default 1). A value outside that range is a 400. Value comes from: Tolerance chosen by your application.'
+        schema:
+          type: integer
+        example: '2'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                snapshot:
+                  brand_id: '12'
+                  model_ids:
+                  - '4411'
+                  year_center: 2019
+                  year_flex: 2
+                  year_from: 2017
+                  year_to: 2021
+                  listing_count: 84
+                  avg_price_eur: 24310.5
+                  median_price_eur: 23900
+                  min_price_eur: 15500
+                  max_price_eur: 41000
+                  offers: []
+                  raw_matches: []
+                  computed_at: '2026-08-27T02:14:11'
+                  updated_at: '2026-08-27T02:14:11'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/auction-market:
+    get:
+      operationId: get_api_auction_market
+      summary: Auction-market price snapshot for the same brand, model, and year window
+      description: 'Auction-market price snapshot for the same brand, model, and year window.
+
+
+        The same question asked of auction inventory rather than retail: what lots of this specification have cost at auction. Missing brand/model/year → 400; flex outside 0–10 → 400; invalid scope → 400; no snapshot for that window → 404. Retail and auction prices are not comparable line for line — the Cars.bg figure is a Bulgarian asking price including everything a retail seller bundles; the auction figure is a lot price before fees, transport, duty and VAT. Put the auction figure through the import calculator before setting the two side by side. No envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — scope (enum): Echoes the request: active restricts to lots still open, inactive to closed ones, all covers both. auction_count (integer): Lots behind the aggregate. Sanity-check it before quoting a percentile. p10_price_eur / p25_price_eur / p75_price_eur / p90_price_eur (number): Percentiles — the reason to prefer this over the Cars.bg snapshot when you want a spread rather than a point estimate. A wide p10–p90 band means the specification is not pinning the price down. first_seen_min / first_seen_max (timestamp): The observation window the lots span. A snapshot whose window is eight months wide is not a spot price. auctions (object[]): The individual lots the aggregate was computed from.'
+      tags:
+      - Market Intelligence
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: market
+      x-examples:
+      - GET https://api.thecarapi.com/api/auction-market?brand=BMW&model=320d&year=2019&scope=active
+      - GET https://api.thecarapi.com/api/auction-market?brand=Kia&model=EV6&year=2023&flex=1
+      parameters:
+      - name: brand
+        in: query
+        required: true
+        description: 'Brand name. Matched against the normalized clean_make. Value comes from: /api/brands -> brands[].name'
+        schema:
+          type: string
+        example: BMW
+      - name: make
+        in: query
+        required: true
+        description: 'Brand name. Matched against the normalized clean_make. Value comes from: /api/brands -> brands[].name'
+        schema:
+          type: string
+        example: BMW
+      - name: model
+        in: query
+        required: true
+        description: 'Model name. Matched against clean_model. Value comes from: /api/models?brand=bmw -> models[].name'
+        schema:
+          type: string
+        example: 320d
+      - name: year
+        in: query
+        required: true
+        description: 'The centre year. Value comes from: Centre year chosen by your application.'
+        schema:
+          type: integer
+        example: '2019'
+      - name: flex
+        in: query
+        required: false
+        description: 'Year tolerance ± (0–10, default 1). Value comes from: Tolerance chosen by your application.'
+        schema:
+          type: integer
+        example: '2'
+      - name: scope
+        in: query
+        required: false
+        description: 'Default all. Anything else is a 400. Each is a separately built snapshot, so active can exist while inactive does not. Value comes from: Choose all, active, or inactive.'
+        schema:
+          type: string
+        example: active
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                snapshot:
+                  clean_make: BMW
+                  clean_model: 320d
+                  year_center: 2019
+                  year_flex: 1
+                  year_from: 2018
+                  year_to: 2020
+                  scope: all
+                  auction_count: 412
+                  avg_price_eur: 18220.4
+                  median_price_eur: 17800
+                  p10_price_eur: 11900
+                  p25_price_eur: 14750
+                  p75_price_eur: 21400
+                  p90_price_eur: 26100
+                  min_price_eur: 6200
+                  max_price_eur: 44900
+                  first_seen_min: '2026-01-04T00:00:00'
+                  first_seen_max: '2026-08-22T00:00:00'
+                  auctions: []
+                  computed_at: '2026-08-27T02:41:03'
+                  updated_at: '2026-08-27T02:41:03'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

@@ -1,0 +1,450 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Catalog API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Catalog
+  description: Build slug-addressable manufacturer and model-group navigation. All catalog list routes paginate with a default limit of 50 and are capped at offset 5000 — a deeper page is a 400 naming the limit. They carry page, page_size and max_page.
+  externalDocs:
+    url: https://thecarapi.com/docs/catalog
+paths:
+  /api/catalog/manufacturers:
+    get:
+      operationId: get_api_catalog_manufacturers
+      summary: Paginated manufacturer catalog with inventory counts
+      description: Paginated manufacturer catalog with inventory counts.
+      tags:
+      - Catalog
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: catalog
+      x-examples:
+      - GET https://api.thecarapi.com/api/catalog/manufacturers?country=DE&limit=20
+      - GET https://api.thecarapi.com/api/catalog/manufacturers?page=2&page_size=25
+      parameters:
+      - name: country
+        in: query
+        required: false
+        description: 'Restrict to a country or europe. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: limit
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: offset
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: page
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: page_size
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                results:
+                - slug: bmw
+                  name: BMW
+                  inventory_count: 1543
+                  brand_id: 12
+                total: 96
+                limit: 50
+                offset: 0
+                total_pages: 2
+                max_page: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/catalog/manufacturers/{slug}:
+    get:
+      operationId: get_api_catalog_manufacturers_slug
+      summary: Resolve one manufacturer by slug
+      description: 'Resolve one manufacturer by slug.
+
+
+        Returns 404 when the slug is unknown.'
+      tags:
+      - Catalog
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: catalog
+      x-examples:
+      - GET https://api.thecarapi.com/api/catalog/manufacturers/bmw
+      - GET https://api.thecarapi.com/api/catalog/manufacturers/bmw?country=DE
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        description: 'Manufacturer slug. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: country
+        in: query
+        required: false
+        description: 'Optional country restriction. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                manufacturer:
+                  slug: bmw
+                  name: BMW
+                  inventory_count: 1543
+                  brand_id: 12
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/catalog/manufacturers/stats:
+    get:
+      operationId: get_api_catalog_manufacturers_stats
+      summary: Return aggregate manufacturer statistics
+      description: 'Return aggregate manufacturer statistics.
+
+
+        Aggregate manufacturer statistics. Optional country filter. The reference does not pin a field list for this body — treat extra keys as operational, not contract.'
+      tags:
+      - Catalog
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: catalog
+      x-examples:
+      - GET https://api.thecarapi.com/api/catalog/manufacturers/stats
+      - GET https://api.thecarapi.com/api/catalog/manufacturers/stats?country=DE
+      parameters:
+      - name: country
+        in: query
+        required: false
+        description: 'Optional country restriction. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/catalog/model-groups:
+    get:
+      operationId: get_api_catalog_model_groups
+      summary: Paginated model groups for one manufacturer
+      description: Paginated model groups for one manufacturer.
+      tags:
+      - Catalog
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: catalog
+      x-examples:
+      - GET https://api.thecarapi.com/api/catalog/model-groups?manufacturer__slug=bmw&search=320
+      - GET https://api.thecarapi.com/api/catalog/model-groups?manufacturer__slug=bmw&country=DE&page=2&page_size=20
+      parameters:
+      - name: manufacturer__slug
+        in: query
+        required: true
+        description: 'Parent manufacturer slug. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: search
+        in: query
+        required: false
+        description: 'Substring filter on model name. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: '320'
+      - name: country
+        in: query
+        required: false
+        description: 'Optional country restriction. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: limit
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: offset
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: page
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: page_size
+        in: query
+        required: false
+        description: 'Standard pagination. Default limit 50. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '20'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                results:
+                - slug: 320d
+                  name: 320d
+                  inventory_count: 210
+                  manufacturer_slug: bmw
+                total: 34
+                limit: 50
+                offset: 0
+                total_pages: 1
+                max_page: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/catalog/model-groups/{slug}:
+    get:
+      operationId: get_api_catalog_model_groups_slug
+      summary: Resolve one model group by slug
+      description: Resolve one model group by slug.
+      tags:
+      - Catalog
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: catalog
+      x-examples:
+      - GET https://api.thecarapi.com/api/catalog/model-groups/320d?manufacturer__slug=bmw
+      - GET https://api.thecarapi.com/api/catalog/model-groups/320d?manufacturer__slug=bmw&country=DE
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        description: 'Model-group slug. Value comes from: /api/catalog/model-groups -> results[].slug'
+        schema:
+          type: string
+        example: 320d
+      - name: manufacturer__slug
+        in: query
+        required: false
+        description: 'Manufacturer slug for disambiguation. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: country
+        in: query
+        required: false
+        description: 'Optional country restriction. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                model_group:
+                  slug: 320d
+                  name: 320d
+                  inventory_count: 210
+                  manufacturer_slug: bmw
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

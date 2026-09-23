@@ -1,0 +1,452 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Search & discovery API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Search and Discovery
+  description: Search live auction inventory, then resolve lightweight full-text matches. Ended lots are hidden by default; is_active=false / include_ended=true shows them as well as live ones.
+  externalDocs:
+    url: https://thecarapi.com/docs/search
+paths:
+  /api/search:
+    get:
+      operationId: get_api_search
+      summary: Primary filtered search over live auction inventory
+      description: 'Primary filtered search over live auction inventory.
+
+
+        site accepts auto1, japanauction (the Japanese auction houses), copart, ecarstrade, encar, openlane or schadeautos — the European classifieds network is not a site value. Both site and site_exclude take a comma-separated, case-insensitive list; an unknown slug on either is a 400 naming the offender, and passing both narrows the include list by the exclusion. There is no offset cap: filtered or not, max_page equals total_pages. A very deep filtered search is answered from a compact index where it can be; where it cannot, it is subject to the safety timeout and may come back 503 asking you to narrow it. Pages past offset 5000 are not cached.
+
+
+        Response fields — results[] (object[]): Search result cards. The full allowlisted field set is in the data dictionary; fields are present when the source provides them. Address a car by auction_id_str, not auction_id — japanauction ids exceed 2^53, so a client parsing JSON numbers as doubles silently rounds the numeric one. results[].images (object[]): At most the first 8 display-ordered gallery entries, primary first. This is a card preview, never the full gallery — read vault_gallery on the detail response or /api/auction-images/{site}/{id} for everything. total (integer | null): Total matching rows, counting the same lots the pages return — so paging to total_pages does not run into short or empty pages. Null when include_total=false or totals are suppressed. limit / offset (integer): The window that was actually applied, echoed back. On a count_only=true response both are 0. page / page_size / total_pages / max_page (integer | null): The same window in page terms, plus total pages and the deepest reachable page. All four are null on a count_only response, which has no pages to describe. max_page equals total_pages here — /api/search has no offset cap. count_only (boolean): Echoes the parameter. On true the rows are omitted and only total remains. secret_mode (boolean): Legacy field, always false. Ignore it. contract_version (string): Schema contract the response was built against. request_id / server_time / data_updated_at (string): Correlation id (also X-Request-ID), response time, and when the underlying data was last refreshed.'
+      tags:
+      - Search and Discovery
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/search?brand=bmw&fuel=Diesel&year_from=2018&sort=price_low&limit=24
+      - GET https://api.thecarapi.com/api/search?site=encar&country=KR&buy_now=true&page=2&page_size=20
+      parameters:
+      - name: search
+        in: query
+        required: false
+        description: 'Free-text brand, model, or keyword query. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: BMW 320d
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs, OR within the parameter. Case-insensitive. An unknown slug is a 400 naming the offender — one bad member rejects the whole list. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: encar
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to leave out. Sent alongside site, it narrows the include list; excluding everything you included is a 400, not an empty page. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: copart
+      - name: brand
+        in: query
+        required: false
+        description: 'Brand display name, slug, or brand_id — all three select the same inventory. Matched on the brand identity rather than the published spelling, so sources that write it differently (openlane publishes "Volkswagen" where others write "VW") are all included. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Model name or slug. Value comes from: /api/models?brand=bmw -> models[].slug'
+        schema:
+          type: string
+        example: 320d
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical fuel group, matched whole. Hybrid, Mild Hybrid and Plug-in Hybrid are three separate groups — fuel=Hybrid returns full hybrids only. A lot with no recorded fuel matches every fuel filter rather than none, so it stays reachable. Value comes from: /api/fuels -> fuels[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical gearbox group, matched whole. Same unknown-matches-all rule as fuel: a car with no recorded gearbox answers every gearbox filter. Value comes from: /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Automatic
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'cars or suvs & trucks. Value comes from: Choose from the documented vehicle_type enum.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Body-style filter. Value comes from: Your application''s normalized body-style value.'
+        schema:
+          type: string
+        example: sedan
+      - name: steering
+        in: query
+        required: false
+        description: 'Left- or right-hand drive. The parameter takes two values, each with four equivalent spellings. Every listing resolves to one side or the other, so the two values partition the inventory and their counts sum to the unfiltered total. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage range chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage range chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Horsepower range. Value comes from: Horsepower range chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Horsepower range. Value comes from: Horsepower range chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '10000'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '10000'
+      - name: damaged
+        in: query
+        required: false
+        description: 'Return damaged or broken vehicles only. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Return Buy-Now listings only. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Return auctions ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: smart_filter
+        in: query
+        required: false
+        description: 'top_offers, low_mileage, or best_value. Value comes from: Choose from the documented smart_filter enum.'
+        schema:
+          type: string
+        example: best_value
+      - name: is_active
+        in: query
+        required: false
+        description: 'Default true: lots whose auction has closed are hidden. false shows closed lots in addition to live ones — it does not return only ended lots, and it is not a filter on the is_active response field. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'false'
+      - name: include_ended
+        in: query
+        required: false
+        description: 'The same switch inverted: include_ended=true equals is_active=false. Default false. If both are sent, include_ended wins. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'false'
+      - name: sort
+        in: query
+        required: false
+        description: 'Sort value from the data dictionary. Default default — photo-first, then newest. The retired random value is still accepted and is served as default. Value comes from: Choose from the documented Sort enum.'
+        schema:
+          type: string
+        example: price_low
+      - name: limit
+        in: query
+        required: false
+        description: 'Page size, maximum 100. Default 100. Value comes from: Page size chosen by your application.'
+        schema:
+          type: integer
+        example: '24'
+      - name: page_size
+        in: query
+        required: false
+        description: 'Page size, maximum 100. Default 100. Value comes from: Page size chosen by your application.'
+        schema:
+          type: integer
+        example: '24'
+      - name: offset
+        in: query
+        required: false
+        description: 'Offset-based or page-based pagination. Value comes from: Current page state in your application.'
+        schema:
+          type: integer
+        example: '24'
+      - name: page
+        in: query
+        required: false
+        description: 'Offset-based or page-based pagination. Value comes from: Current page state in your application.'
+        schema:
+          type: integer
+        example: '24'
+      - name: include_total
+        in: query
+        required: false
+        description: 'Set false to skip the count. Default true. Value comes from: Your performance/display choice.'
+        schema:
+          type: boolean
+        example: 'false'
+      - name: count_only
+        in: query
+        required: false
+        description: 'Return counts without result rows. Value comes from: Your response-mode choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                results:
+                - auction_id: 38112900
+                  site_name: encar
+                  clean_make: BMW
+                  clean_model: 320d
+                  registration_year: 2020
+                  mileage: 45000
+                  public_price_eur: 21500
+                  thumbnail_url: https://cdn.example/photo.webp
+                total: 18342
+                limit: 24
+                offset: 0
+                count_only: false
+                page: 1
+                page_size: 24
+                total_pages: 764
+                max_page: 764
+                secret_mode: false
+                contract_version: '2026-08-19'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/search/auction-ids:
+    get:
+      operationId: get_api_search_auction_ids
+      summary: Resolve a free-text query to matching auction ids only
+      description: 'Resolve a free-text query to matching auction ids only.
+
+
+        Not enabled on a new key by default — ask for it. Three answers are possible: 200 with an empty list when full-text search is switched off or q is empty; 503 with success: false and an empty list when full-text search is enabled but unreachable; 500 with success: false and an empty list for anything else. An empty list on a 200 genuinely means "no matches" only when you already know the feature is on. Treat success: false as "unknown", never as "zero". This response carries no envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — auction_ids (integer[]): Bare auction_id values with no source attached. An id is only unambiguous if it happens to be unique across sources — which is exactly what /api/auction/{site}/{id} needs a site for. Use this as a filter, not as an addressing scheme; hydrate through /api/search?search= instead, which returns whole cards carrying site_name and auction_id_str. found (integer): Length of auction_ids. The whole match set is returned, capped at 10,000 ids — there is no paging.'
+      tags:
+      - Search and Discovery
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/search/auction-ids?q=bmw%20320d
+      - GET https://api.thecarapi.com/api/search/auction-ids?q=kia%20ev6
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: 'Free-text query. An empty or missing query returns an empty list, not a 400. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: bmw 320d touring
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                auction_ids:
+                - 38112900
+                - 11409652
+                found: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

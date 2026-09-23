@@ -1,0 +1,556 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Vehicle details API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Vehicle details
+  description: Fetch a full source payload from cache or, when needed, from the upstream source.
+  externalDocs:
+    url: https://thecarapi.com/docs/car-details
+paths:
+  /api/car-details:
+    get:
+      operationId: get_api_car_details
+      summary: Fetch full vehicle detail by source and listing identifier
+      description: 'Fetch full vehicle detail by source and listing identifier.
+
+
+        Parameters may be sent in the query string or a JSON body. This endpoint can be slower than canonical auction detail. Fee, transport, delivery and account-scoped fields are stripped here exactly as they are on auction detail. When no details are stored yet it fetches from the source during the request and returns what it just stored, rather than an empty shell — read details_pending in the body and X-Details-Fetch in the headers (fetched, pending, or miss; absent when served from stored data), and poll rather than retrying in a tight loop. This response carries no envelope metadata — no contract_version, request_id, server_time or data_updated_at in the body. Read the correlation id from the X-Request-ID header. The response also carries X-Data-Source (auctions, car_details_cache or scraped) telling you which path answered, and X-Cache-Age in seconds on a cache hit. Everything outside vehicle_details and the price fields is source-shaped (data, auction, images, details depending on the source); those two are the parts with a stable cross-source contract. Live prices apply here too when the response comes from stored auction data; note the one trap that catches people — for openlane this body’s auction key is an image container, not the vehicle record, so prices are read from the top level. If the source reports the listing is gone, that surfaces as a 404 rather than a 500.
+
+
+        Response fields — vehicle_details (object | null): The same normalized block /api/auction/{site}/{id} returns, so the two detail endpoints agree. Null when the listing has no fetched details yet. This is the only part of the response with a stable cross-source contract — the remaining keys are source-shaped (data, auction, images, details depending on the source). details_pending (boolean): True while the upstream fetch is still running — a fetch that outran the request time budget keeps running in the background. Poll rather than retrying in a tight loop. The X-Details-Fetch header carries the same signal as fetched, pending or miss, and is absent when the response was served from stored data. Cache-Control is max-age=5 while pending and max-age=60 once settled. current_price / current_final / public_price_eur (number): The same price fields as /api/auction/{site}/{id}, under the same names and with the same JSON types — but at the top level here, because this body is source-shaped and has no auction wrapper. The two detail endpoints therefore cannot disagree about what a car costs. live_price / live_price_pending (object | boolean): Identical contract to /api/auction/{site}/{id}, and attached the same way when this response is served from stored auction data — the normal case, for a running openlane or ecarstrade auction. A first-ever fetch of a listing we hold no row for returns the source’s own fresh payload anyway. auction (object): Not the vehicle record. For openlane this is { extracted_fields: { images: […] } }, an image container that shares a name and nothing else. Read prices from the top level on this endpoint, and from inside auction on /api/auction/{site}/{id}. estimated_value_eur (number | null): Same field and same meaning as on /api/auction/{site}/{id}, at the top level here. The auction house own valuation — not a price you can pay, ecarstrade only, null everywhere else. steering (enum | null): Same derivation and spelling as the search cards and /api/auction/{site}/{id}, published at the top level here. Null only when the vehicle is not in our inventory at all, because there is then no registration country to derive a side from.'
+      tags:
+      - Vehicle details
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: details
+      x-examples:
+      - GET | POST https://api.thecarapi.com/api/car-details?site=encar&id=38112900
+      - "POST https://api.thecarapi.com/api/car-details\n{\n  \"site\": \"openlane\",\n  \"identifier\": \"11125938\",\n  \"search_id\": \"vehicle-page-42\"\n}"
+      parameters:
+      - name: site
+        in: query
+        required: true
+        description: 'schadeautos, auto1, openlane, copart, encar, ecarstrade, or japanauction. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: encar
+      - name: id
+        in: query
+        required: true
+        description: 'Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id. Value comes from: /api/search -> results[].auction_id, or the source listing URL'
+        schema:
+          type: string
+        example: '38112900'
+      - name: link
+        in: query
+        required: true
+        description: 'Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id. Value comes from: /api/search -> results[].auction_id, or the source listing URL'
+        schema:
+          type: string
+        example: '38112900'
+      - name: identifier
+        in: query
+        required: true
+        description: 'Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id. Value comes from: /api/search -> results[].auction_id, or the source listing URL'
+        schema:
+          type: string
+        example: '38112900'
+      - name: search_id
+        in: query
+        required: false
+        description: 'Optional correlation id. Value comes from: Optional correlation id generated by your application.'
+        schema:
+          type: string
+        example: vehicle-page-42
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                site: openlane
+                auction_id: 11409652
+                current_price: 25900
+                current_final: 33566
+                public_price_eur: 33926
+                vehicle_details: {}
+                auction:
+                  extracted_fields:
+                    images: []
+                live_price:
+                  price: 25900
+                  currency: EUR
+                  source: openlane
+                  fetched_at: 1786659750
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: post_api_car_details
+      summary: Fetch full vehicle detail by source and listing identifier
+      description: 'Fetch full vehicle detail by source and listing identifier.
+
+
+        Parameters may be sent in the query string or a JSON body. This endpoint can be slower than canonical auction detail. Fee, transport, delivery and account-scoped fields are stripped here exactly as they are on auction detail. When no details are stored yet it fetches from the source during the request and returns what it just stored, rather than an empty shell — read details_pending in the body and X-Details-Fetch in the headers (fetched, pending, or miss; absent when served from stored data), and poll rather than retrying in a tight loop. This response carries no envelope metadata — no contract_version, request_id, server_time or data_updated_at in the body. Read the correlation id from the X-Request-ID header. The response also carries X-Data-Source (auctions, car_details_cache or scraped) telling you which path answered, and X-Cache-Age in seconds on a cache hit. Everything outside vehicle_details and the price fields is source-shaped (data, auction, images, details depending on the source); those two are the parts with a stable cross-source contract. Live prices apply here too when the response comes from stored auction data; note the one trap that catches people — for openlane this body’s auction key is an image container, not the vehicle record, so prices are read from the top level. If the source reports the listing is gone, that surfaces as a 404 rather than a 500.
+
+
+        Response fields — vehicle_details (object | null): The same normalized block /api/auction/{site}/{id} returns, so the two detail endpoints agree. Null when the listing has no fetched details yet. This is the only part of the response with a stable cross-source contract — the remaining keys are source-shaped (data, auction, images, details depending on the source). details_pending (boolean): True while the upstream fetch is still running — a fetch that outran the request time budget keeps running in the background. Poll rather than retrying in a tight loop. The X-Details-Fetch header carries the same signal as fetched, pending or miss, and is absent when the response was served from stored data. Cache-Control is max-age=5 while pending and max-age=60 once settled. current_price / current_final / public_price_eur (number): The same price fields as /api/auction/{site}/{id}, under the same names and with the same JSON types — but at the top level here, because this body is source-shaped and has no auction wrapper. The two detail endpoints therefore cannot disagree about what a car costs. live_price / live_price_pending (object | boolean): Identical contract to /api/auction/{site}/{id}, and attached the same way when this response is served from stored auction data — the normal case, for a running openlane or ecarstrade auction. A first-ever fetch of a listing we hold no row for returns the source’s own fresh payload anyway. auction (object): Not the vehicle record. For openlane this is { extracted_fields: { images: […] } }, an image container that shares a name and nothing else. Read prices from the top level on this endpoint, and from inside auction on /api/auction/{site}/{id}. estimated_value_eur (number | null): Same field and same meaning as on /api/auction/{site}/{id}, at the top level here. The auction house own valuation — not a price you can pay, ecarstrade only, null everywhere else. steering (enum | null): Same derivation and spelling as the search cards and /api/auction/{site}/{id}, published at the top level here. Null only when the vehicle is not in our inventory at all, because there is then no registration country to derive a side from.'
+      tags:
+      - Vehicle details
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: details
+      x-examples:
+      - GET | POST https://api.thecarapi.com/api/car-details?site=encar&id=38112900
+      - "POST https://api.thecarapi.com/api/car-details\n{\n  \"site\": \"openlane\",\n  \"identifier\": \"11125938\",\n  \"search_id\": \"vehicle-page-42\"\n}"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - site
+              - id
+              - link
+              - identifier
+              properties:
+                site:
+                  type: string
+                  description: schadeautos, auto1, openlane, copart, encar, ecarstrade, or japanauction.
+                  example: encar
+                id:
+                  type: string
+                  description: Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id.
+                  example: '38112900'
+                link:
+                  type: string
+                  description: Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id.
+                  example: '38112900'
+                identifier:
+                  type: string
+                  description: Provide any one source id or listing URL. For auto1 and japanauction this is the offer id/UUID, not the numeric auction id.
+                  example: '38112900'
+                search_id:
+                  type: string
+                  description: Optional correlation id.
+                  example: vehicle-page-42
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                site: openlane
+                auction_id: 11409652
+                current_price: 25900
+                current_final: 33566
+                public_price_eur: 33926
+                vehicle_details: {}
+                auction:
+                  extracted_fields:
+                    images: []
+                live_price:
+                  price: 25900
+                  currency: EUR
+                  source: openlane
+                  fetched_at: 1786659750
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/listVehicles:
+    get:
+      operationId: get_api_listVehicles
+      summary: Catalog-shaped listing feed — a compatibility alias for search
+      description: 'Catalog-shaped listing feed — a compatibility alias for search.
+
+
+        A compatibility alias kept for older integrations, also reachable at /listVehicles, and accepted as GET (query string) or POST (JSON body) with the same fields. Not enabled on a new key by default — ask for it. New integrations should use /api/search, which has more filters, cheaper counts, ETags and a stable envelope. This route exists so older clients keep working. ordering understands three fields, each with an optional minus for descending: created_at / created / published_at (default, photo-first then newest), -created_at / -created / -published_at (newest), price / price_eur (price_low), -price / -price_eur (price_high), year / date_first_registration (year_old), -year / -date_first_registration (year_new). An unrecognised value silently falls back to the default order rather than erroring. The response carries no envelope metadata and is sent Cache-Control: no-store, so it is never revalidated with an ETag.
+
+
+        Response fields — vehicles / results (object[]): The same array object served twice under two names for compatibility. Read either one, not both. Each row is a standard search result card plus four catalog-shaped keys: vehicle_id (the same value as auction_id — subject to the same 2^53 caveat, prefer auction_id_str), manufacturer_slug (slug of clean_make), model_group_slug (slug of clean_model), and fuel_type (normalized fuel, present only when the row carries one). Rows carry the same 8-photo images preview cap as /api/search. total / limit / offset / page / page_size / total_pages / max_page (integer | null): Standard pagination fields. There is no offset cap — max_page equals total_pages, as on /api/search. Default limit 50.'
+      tags:
+      - Vehicle details
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: details
+      x-examples:
+      - GET | POST https://api.thecarapi.com/api/listVehicles?manufacturer_slug=bmw&model_group_slug=320d&max_mileage=120000
+      - GET | POST https://api.thecarapi.com/api/listVehicles?brand=audi&min_year=2019&ordering=price&limit=50
+      parameters:
+      - name: manufacturer_slug
+        in: query
+        required: false
+        description: 'Brand, under any of the three accepted spellings. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: manufacturer
+        in: query
+        required: false
+        description: 'Brand, under any of the three accepted spellings. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: brand
+        in: query
+        required: false
+        description: 'Brand, under any of the three accepted spellings. Value comes from: /api/catalog/manufacturers -> results[].slug'
+        schema:
+          type: string
+        example: bmw
+      - name: model_group_slug
+        in: query
+        required: false
+        description: 'Model group, under any of the three accepted spellings. Value comes from: /api/catalog/model-groups?manufacturer__slug=bmw -> results[].slug'
+        schema:
+          type: string
+        example: 320d
+      - name: model_group
+        in: query
+        required: false
+        description: 'Model group, under any of the three accepted spellings. Value comes from: /api/catalog/model-groups?manufacturer__slug=bmw -> results[].slug'
+        schema:
+          type: string
+        example: 320d
+      - name: model
+        in: query
+        required: false
+        description: 'Model group, under any of the three accepted spellings. Value comes from: /api/catalog/model-groups?manufacturer__slug=bmw -> results[].slug'
+        schema:
+          type: string
+        example: 320d
+      - name: fuel_type
+        in: query
+        required: false
+        description: 'Canonical fuel group. Value comes from: /api/fuels -> fuels[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical fuel group. Value comes from: /api/fuels -> fuels[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: steering
+        in: query
+        required: false
+        description: 'Left- or right-hand drive, in any of the spellings /api/search accepts. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: min_year
+        in: query
+        required: false
+        description: 'Registration-year range. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2018'
+      - name: max_year
+        in: query
+        required: false
+        description: 'Registration-year range. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2018'
+      - name: max_mileage
+        in: query
+        required: false
+        description: 'Mileage ceiling. Value comes from: Mileage ceiling chosen by your user.'
+        schema:
+          type: integer
+        example: '120000'
+      - name: ordering
+        in: query
+        required: false
+        description: 'Sort order. An unrecognised value silently falls back to the default (photo-first, then newest) rather than erroring. Value comes from: created_at / created / published_at, price / price_eur, year / date_first_registration, each with an optional leading minus.'
+        schema:
+          type: string
+        example: -created_at
+      - name: limit
+        in: query
+        required: false
+        description: 'Or page_size / page. Default limit 50. No offset cap. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '50'
+      - name: offset
+        in: query
+        required: false
+        description: 'Or page_size / page. Default limit 50. No offset cap. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '50'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                vehicles: []
+                results: []
+                total: 210
+                limit: 50
+                offset: 0
+                total_pages: 5
+                max_page: 5
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+    post:
+      operationId: post_api_listVehicles
+      summary: Catalog-shaped listing feed — a compatibility alias for search
+      description: 'Catalog-shaped listing feed — a compatibility alias for search.
+
+
+        A compatibility alias kept for older integrations, also reachable at /listVehicles, and accepted as GET (query string) or POST (JSON body) with the same fields. Not enabled on a new key by default — ask for it. New integrations should use /api/search, which has more filters, cheaper counts, ETags and a stable envelope. This route exists so older clients keep working. ordering understands three fields, each with an optional minus for descending: created_at / created / published_at (default, photo-first then newest), -created_at / -created / -published_at (newest), price / price_eur (price_low), -price / -price_eur (price_high), year / date_first_registration (year_old), -year / -date_first_registration (year_new). An unrecognised value silently falls back to the default order rather than erroring. The response carries no envelope metadata and is sent Cache-Control: no-store, so it is never revalidated with an ETag.
+
+
+        Response fields — vehicles / results (object[]): The same array object served twice under two names for compatibility. Read either one, not both. Each row is a standard search result card plus four catalog-shaped keys: vehicle_id (the same value as auction_id — subject to the same 2^53 caveat, prefer auction_id_str), manufacturer_slug (slug of clean_make), model_group_slug (slug of clean_model), and fuel_type (normalized fuel, present only when the row carries one). Rows carry the same 8-photo images preview cap as /api/search. total / limit / offset / page / page_size / total_pages / max_page (integer | null): Standard pagination fields. There is no offset cap — max_page equals total_pages, as on /api/search. Default limit 50.'
+      tags:
+      - Vehicle details
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: details
+      x-examples:
+      - GET | POST https://api.thecarapi.com/api/listVehicles?manufacturer_slug=bmw&model_group_slug=320d&max_mileage=120000
+      - GET | POST https://api.thecarapi.com/api/listVehicles?brand=audi&min_year=2019&ordering=price&limit=50
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: []
+              properties:
+                manufacturer_slug:
+                  type: string
+                  description: Brand, under any of the three accepted spellings.
+                  example: bmw
+                manufacturer:
+                  type: string
+                  description: Brand, under any of the three accepted spellings.
+                  example: bmw
+                brand:
+                  type: string
+                  description: Brand, under any of the three accepted spellings.
+                  example: bmw
+                model_group_slug:
+                  type: string
+                  description: Model group, under any of the three accepted spellings.
+                  example: 320d
+                model_group:
+                  type: string
+                  description: Model group, under any of the three accepted spellings.
+                  example: 320d
+                model:
+                  type: string
+                  description: Model group, under any of the three accepted spellings.
+                  example: 320d
+                fuel_type:
+                  type: string
+                  description: Canonical fuel group.
+                  example: Diesel
+                fuel:
+                  type: string
+                  description: Canonical fuel group.
+                  example: Diesel
+                steering:
+                  type: string
+                  description: Left- or right-hand drive, in any of the spellings /api/search accepts.
+                  example: left
+                min_year:
+                  type: integer
+                  description: Registration-year range.
+                  example: 2018 / 2024
+                max_year:
+                  type: integer
+                  description: Registration-year range.
+                  example: 2018 / 2024
+                max_mileage:
+                  type: integer
+                  description: Mileage ceiling.
+                  example: '120000'
+                ordering:
+                  type: string
+                  description: Sort order. An unrecognised value silently falls back to the default (photo-first, then newest) rather than erroring.
+                  example: -created_at
+                limit:
+                  type: integer
+                  description: Or page_size / page. Default limit 50. No offset cap.
+                  example: 50 / 0
+                offset:
+                  type: integer
+                  description: Or page_size / page. Default limit 50. No offset cap.
+                  example: 50 / 0
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                vehicles: []
+                results: []
+                total: 210
+                limit: 50
+                offset: 0
+                total_pages: 5
+                max_page: 5
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

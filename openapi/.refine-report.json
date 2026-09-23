@@ -1,0 +1,43 @@
+{
+  "provider": "thecarapi",
+  "sources": [
+    "_original/thecarapi-openapi.json"
+  ],
+  "outputs": [
+    "thecarapi-auctions-history-api-openapi.yml",
+    "thecarapi-catalog-api-openapi.yml",
+    "thecarapi-european-classifieds-api-openapi.yml",
+    "thecarapi-filter-facets-api-openapi.yml",
+    "thecarapi-health-contract-api-openapi.yml",
+    "thecarapi-import-calculator-api-openapi.yml",
+    "thecarapi-market-intelligence-api-openapi.yml",
+    "thecarapi-seo-helpers-api-openapi.yml",
+    "thecarapi-search-discovery-api-openapi.yml",
+    "thecarapi-top-offers-api-openapi.yml",
+    "thecarapi-vehicle-details-api-openapi.yml"
+  ],
+  "archived": [
+    "deleted 1 superseded output(s) from the previous generation"
+  ],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "thecarapi-openapi.json: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
+    "superseded outputs removed: thecarapi-search-and-discovery-api-openapi.yml",
+    "apis.yml register: written (+1 apis, 11 total)"
+  ],
+  "skipped": [
+    "thecarapi-auctions-history-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-catalog-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-european-classifieds-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-filter-facets-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-health-contract-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-import-calculator-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-market-intelligence-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-search-and-discovery-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-seo-helpers-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-top-offers-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "thecarapi-vehicle-details-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
+}

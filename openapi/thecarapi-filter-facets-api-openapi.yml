@@ -1,0 +1,1941 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Filter facets API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Filter facets
+  description: Discover live filter values and counts. Every facet endpoint accepts the search filters, so a facet describes whatever slice of inventory you are looking at rather than the whole of it — each dimension ignoring only its own filter, so a user can switch brands without the option disappearing. Counts and the totals /api/search reports for the same filters cannot disagree. Facet responses cache for about 600 seconds, and a filter sidebar can read every flat dimension in one call with /api/facets.
+  externalDocs:
+    url: https://thecarapi.com/docs/facets
+paths:
+  /api/facets:
+    get:
+      operationId: get_api_facets
+      summary: Every flat facet dimension in one request instead of six
+      description: 'Every flat facet dimension in one request instead of six.
+
+
+        Every filter accepted by the individual facet endpoints applies here, per field, exactly as its own endpoint would apply it — including the cross-filtering, so ?price_to=5000&fields=brands returns each brand count under EUR 5,000 and value lists omit options with no matches left. is_active and include_ended are not accepted: facets always describe lots whose auction is still open. The per-dimension endpoints below are unchanged and stay fully supported — this is an additional way to read the same data. Scope search, the same scope that already grants them, and the fan-out bills one quota unit rather than six.
+
+
+        Response fields — brands / years / fuels / countries / gearboxes / sites (array): Each field is its own endpoint’s payload merged verbatim — countries still ships country_details alongside it, and no field gains or loses counts by being requested here. errors (object): Present only when a dimension could not be served: { field: reason }. Every other field is still returned, so one slow dimension cannot blank a filter sidebar.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/facets?fields=brands,fuels,gearboxes&country=DE
+      - GET https://api.thecarapi.com/api/facets?fields=brands,years,sites&damaged=true
+      parameters:
+      - name: fields
+        in: query
+        required: false
+        description: 'Comma-separated subset of brands, years, fuels, countries, gearboxes, sites. Defaults to all of them. models is not available here — it is brand-scoped and stays at /api/models. Value comes from: The dimensions your sidebar actually renders.'
+        schema:
+          type: string
+        example: brands,fuels,gearboxes
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                brands:
+                - id: 12
+                  name: BMW
+                  slug: bmw
+                  count: 3266
+                fuels:
+                - Diesel
+                - Petrol
+                gearboxes:
+                - Automatic
+                - Manual
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/brands:
+    get:
+      operationId: get_api_brands
+      summary: List brands with round-trippable slugs and live inventory counts
+      description: 'List brands with round-trippable slugs and live inventory counts.
+
+
+        The slug round-trips: send it back as ?brand= to /api/search or /api/models. Each brand appears once, keyed on its identity rather than on the spelling a source happened to use, and its count is the whole count for that brand — never a per-spelling fraction of it. The list is safe to render straight into a dropdown without de-duplicating.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/brands?search=bm&ordering=-count&limit=20
+      - GET https://api.thecarapi.com/api/brands?country=DE&damaged=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: search
+        in: query
+        required: false
+        description: 'Substring filter on brand name. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: bm
+      - name: ordering
+        in: query
+        required: false
+        description: 'name, -name, count, or -count. An unrecognised value falls back to name rather than erroring. Value comes from: Choose name, -name, count, or -count.'
+        schema:
+          type: string
+        example: -count
+      - name: limit
+        in: query
+        required: false
+        description: 'Maximum number of values. No default — the full brand list is returned unless you cap it, which is what a filter sidebar wants. Value comes from: Result count chosen by your application.'
+        schema:
+          type: integer
+        example: '20'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                brands:
+                - id: 12
+                  name: BMW
+                  slug: bmw
+                  count: 1543
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/models:
+    get:
+      operationId: get_api_models
+      summary: List models for one brand with live inventory counts
+      description: 'List models for one brand with live inventory counts.
+
+
+        brand is required — calling without it returns 400. Each model appears once, merged on the model identity rather than its printed label, so a model spelled "GOLF" by one source and "Golf" by another is one row carrying the whole count.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/models?brand=bmw&ordering=-count
+      - GET https://api.thecarapi.com/api/models?brand=12&search=x&country=DE
+      parameters:
+      - name: brand
+        in: query
+        required: true
+        description: 'Brand name, slug, or brand_id. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: search
+        in: query
+        required: false
+        description: 'Substring filter on model name. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: x
+      - name: ordering
+        in: query
+        required: false
+        description: 'name, -name, count, or -count. An unrecognised value falls back to name rather than erroring. Value comes from: Choose name, -name, count, or -count.'
+        schema:
+          type: string
+        example: -count
+      - name: limit
+        in: query
+        required: false
+        description: 'Maximum number of values. No default — the full model list for the brand is returned unless you cap it. Value comes from: Result count chosen by your application.'
+        schema:
+          type: integer
+        example: '20'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                models:
+                - name: 320d
+                  slug: 320d
+                  count: 210
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/years:
+    get:
+      operationId: get_api_years
+      summary: List registration years available in current inventory
+      description: 'List registration years available in current inventory.
+
+
+        Response fields — years (integer[]): Registration years present in the filtered inventory, newest first. year_counts ({value, count}[]): Mirrors years in the same order. Each count is the offers for that registration year under the request other filters.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/years?country=DE
+      - GET https://api.thecarapi.com/api/years?damaged=true&buy_now=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                years:
+                - 2024
+                - 2023
+                - 2022
+                - 2021
+                year_counts:
+                - value: 2024
+                  count: 512
+                - value: 2023
+                  count: 4127
+                - value: 2022
+                  count: 3890
+                - value: 2021
+                  count: 3544
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/fuels:
+    get:
+      operationId: get_api_fuels
+      summary: List canonical fuel groups available in current inventory
+      description: 'List canonical fuel groups available in current inventory.
+
+
+        Six groups, and the three hybrid kinds are distinct: Hybrid (full hybrid), Mild Hybrid (48V assist, cannot drive on the motor alone) and Plug-in Hybrid. The fuel filter matches a group whole, so fuel=Hybrid returns full hybrids only. To catch every electrified car, send all three.
+
+
+        Response fields — fuels (string[]): Canonical fuel groups present in the filtered inventory, alphabetical. fuel_counts ({value, count}[]): Mirrors fuels in the same order.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/fuels?country=DE
+      - GET https://api.thecarapi.com/api/fuels?buy_now=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                fuels:
+                - Diesel
+                - Electric
+                - Hybrid
+                - Mild Hybrid
+                - Petrol
+                - Plug-in Hybrid
+                fuel_counts:
+                - value: Diesel
+                  count: 18342
+                - value: Electric
+                  count: 903
+                - value: Hybrid
+                  count: 2211
+                - value: Mild Hybrid
+                  count: 5107
+                - value: Petrol
+                  count: 24980
+                - value: Plug-in Hybrid
+                  count: 1489
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/gearboxes:
+    get:
+      operationId: get_api_gearboxes
+      summary: List canonical gearbox groups available in current inventory
+      description: 'List canonical gearbox groups available in current inventory.
+
+
+        Response fields — gearboxes (string[]): Canonical gearbox groups present in the filtered inventory. gearbox_counts ({value, count}[]): Mirrors gearboxes in the same order.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/gearboxes?country=KR
+      - GET https://api.thecarapi.com/api/gearboxes?damaged=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                gearboxes:
+                - Automatic
+                - Manual
+                gearbox_counts:
+                - value: Automatic
+                  count: 22190
+                - value: Manual
+                  count: 15432
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/countries:
+    get:
+      operationId: get_api_countries
+      summary: List vehicle-location countries and display names
+      description: 'List vehicle-location countries and display names.
+
+
+        country=europe means "every origin that is not overseas" and is implemented as an exclusion, not a list: it currently excludes KR (Encar) and JP (the Japanese auction houses), and rows with no recorded country are treated as European and included. If you need strict membership, pass explicit ISO codes instead.
+
+
+        Response fields — countries (string[]): ISO country codes present in the filtered inventory. country_details ({code, name}[]): The same codes with display names, for rendering a picker. country_counts ({value, count}[]): Keyed by canonical ISO code (UK folds into GB), in the same order as countries.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/countries?buy_now=true
+      - GET https://api.thecarapi.com/api/countries?damaged=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                countries:
+                - DE
+                - JP
+                - KR
+                - NL
+                country_details:
+                - code: DE
+                  name: Germany
+                - code: JP
+                  name: Japan
+                - code: KR
+                  name: South Korea
+                - code: NL
+                  name: Netherlands
+                country_counts:
+                - value: DE
+                  count: 9871
+                - value: JP
+                  count: 14203
+                - value: KR
+                  count: 8455
+                - value: NL
+                  count: 3120
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/sites:
+    get:
+      operationId: get_api_sites
+      summary: List auction source slugs with live inventory counts
+      description: 'List auction source slugs with live inventory counts.
+
+
+        This is the discovery endpoint for both /api/search?site= and /api/auction/{site}/{id}. Counts here respect every other filter on the request but ignore site / site_exclude themselves — a facet that filtered by its own dimension could only ever return the sources you already named. The European classifieds network is retail data, not auction inventory, so it never appears here; it has its own endpoint group.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/api/sites?buy_now=true
+      - GET https://api.thecarapi.com/api/sites?damaged=true
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                sites:
+                - id: 1
+                  name: encar
+                  count: 9021
+                - id: 2
+                  name: openlane
+                  count: 4110
+                - id: 3
+                  name: ecarstrade
+                  count: 3187
+                - id: 4
+                  name: japanauction
+                  count: 1642
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /load-models:
+    get:
+      operationId: get_load_models
+      summary: Return the complete model catalog grouped by brand
+      description: 'Return the complete model catalog grouped by brand.
+
+
+        This response is shaped differently from every other endpoint in the API: the body IS the map. Every key is a brand name and every value is that brand list of models — there is no wrapper object, no success flag and no contract metadata, because the keys are data and nothing else may share that namespace. Read the correlation id from the X-Request-ID header instead. An error response IS wrapped and does carry success: false, so test for the error shape rather than for a success flag that never appears. If you write a generic client wrapper that asserts body.success, special-case this one route. Model entries are objects, not bare strings, and each list is sorted by name. Heavy — cache it, and prefer /api/models for interactive brand-specific dropdowns.'
+      tags:
+      - Filter facets
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: search
+      x-examples:
+      - GET https://api.thecarapi.com/load-models?country=DE
+      - GET https://api.thecarapi.com/load-models?buy_now=true&damaged=false
+      parameters:
+      - name: brand
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: model
+        in: query
+        required: false
+        description: 'Name, slug, or brand_id, exactly as on /api/search. Value comes from: /api/brands -> brands[].slug (or id/name)'
+        schema:
+          type: string
+        example: bmw
+      - name: year_from
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Registration-year range. Accepted and ignored by /api/years itself, which is the dimension they would narrow. Value comes from: /api/years -> years[]'
+        schema:
+          type: integer
+        example: '2018'
+      - name: fuel
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Canonical group, matched whole. Value comes from: /api/fuels -> fuels[], /api/gearboxes -> gearboxes[]'
+        schema:
+          type: string
+        example: Diesel
+      - name: country
+        in: query
+        required: false
+        description: 'ISO country code or europe. Accepted and ignored by /api/sites and /load-models. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to include or leave out. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: openlane
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage range. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: horsepower_from
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: horsepower_to
+        in: query
+        required: false
+        description: 'Power range in HP. Value comes from: Power bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '150'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price range. price_to=5000 on /api/brands returns each brand count under EUR 5,000. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: vehicle_type
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: body_style
+        in: query
+        required: false
+        description: 'Vehicle-type and body-style filters. Value comes from: As on /api/search.'
+        schema:
+          type: string
+        example: cars
+      - name: steering
+        in: query
+        required: false
+        description: 'Restrict to left- or right-hand-drive vehicles. Slower than an unfiltered facet call, because it is computed live rather than read from the precomputed facet table. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: damaged
+        in: query
+        required: false
+        description: 'Restrict to damaged or broken vehicles. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: buy_now
+        in: query
+        required: false
+        description: 'Restrict to Buy-Now inventory. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: ending_soon
+        in: query
+        required: false
+        description: 'Restrict to lots ending within about two hours. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                BMW:
+                - text: 320d
+                - text: X5
+                Volvo:
+                - text: XC60
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

@@ -1,0 +1,265 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Import calculator API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Import calculator
+  description: Estimate the landed cost of importing a vehicle. These are estimates, not a binding quote.
+  externalDocs:
+    url: https://thecarapi.com/docs/calculator
+paths:
+  /api/calculator/countries:
+    get:
+      operationId: get_api_calculator_countries
+      summary: List supported origin and destination countries with EU membership and VAT rates
+      description: 'List supported origin and destination countries with EU membership and VAT rates.
+
+
+        The 36 supported origin/destination countries. This is the authoritative list: a code absent from it is a 400 on /api/calculator/calculate, so read it once at startup instead of hardcoding. An unknown origin or destination is never silently substituted.
+
+
+        Response fields — code (string): Country code. The United Kingdom is UK here, not GB — this list is the calculator’s own country vocabulary and is separate from the vehicle-origin codes on /api/countries, where the same country is canonicalised to GB. If you feed a vehicle’s country_code straight into the calculator, map GB to UK on the way. eu (boolean): True for all 27 EU member states; false for the rest. vat (number): VAT as a fraction (0.19 = 19%), unlike /api/calculator/calculate which returns rates as percentages.'
+      tags:
+      - Import calculator
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: calculator
+      x-examples:
+      - GET https://api.thecarapi.com/api/calculator/countries
+      - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/calculator/countries"'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                countries:
+                - code: DE
+                  name: Germany
+                  eu: true
+                  vat: 0.19
+                - code: KR
+                  name: South Korea
+                  eu: false
+                  vat: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/calculator/calculate:
+    post:
+      operationId: post_api_calculator_calculate
+      summary: Estimate duty, VAT, fees, and the landed total for one lot price
+      description: 'Estimate duty, VAT, fees, and the landed total for one lot price.
+
+
+        Duty and VAT rates are returned as percentages. Missing price → 400. A price that is not a number, is negative, or exceeds 10,000,000 → 400. A car_type other than standard or classic → 400. An origin or destination code not in /api/calculator/countries → 400 naming it. For a source with a fee profile, sending price and site_name reproduces the same model that computed that lot’s buynow_final / current_final, so the two agree. For copart, price a running lot from its final_price, which tracks the live high bid; current_price trails it. For ecarstrade, pass the lot’s own is_margin value from the detail response — omitted, it prices as VAT-deductible, which is the dearer quote, so a caller who leaves it out is never under-quoted. classic relief (no duty, reduced VAT) applies only where duty applies at all, which means an import into the EU from outside it. These are estimates, not a binding quote. No envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — lot_price (number): The price you sent, echoed. auction_fee (number): The auction house’s own buyer fee for that source and lot price. trucking (number): Inland haulage, on the generic model only; 0 under a source profile, where it is folded into shipping. shipping (number): Transport to the destination. Your db_delivery overrides it when supplied. our_fee (number): Our service fee. Charged outside the duty/VAT base. subtotal_customs_value (number): lot_price + auction_fee + trucking + shipping — the value duty is assessed on. duty_rate / duty_amount (number): Rate as a percentage (10.0), and the amount. 0 for a car already in free circulation in the EU. vat_rate / vat_amount (number): Percentage and amount. VAT is charged on subtotal_customs_value + duty_amount, not on the lot price alone. customs_agency (number): Fixed post-import costs outside the duty/VAT base (port clearance, agency work). custom_clearance_total (number): duty_amount + vat_amount + customs_agency. estimated_total (number): subtotal_customs_value + custom_clearance_total + our_fee. The landed figure.'
+      tags:
+      - Import calculator
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: calculator
+      x-examples:
+      - "POST https://api.thecarapi.com/api/calculator/calculate\n{\n  \"price\": 15000,\n  \"origin\": \"KR\",\n  \"destination\": \"BG\",\n  \"site_name\": \"encar\"\n}"
+      - "POST https://api.thecarapi.com/api/calculator/calculate\n{\n  \"price\": 9800,\n  \"origin\": \"BE\",\n  \"destination\": \"BG\",\n  \"site_name\": \"ecarstrade\"\n}"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - price
+              properties:
+                price:
+                  type: number
+                  description: Lot price. Must be between 0 and 10,000,000.
+                  example: '15000'
+                origin:
+                  type: string
+                  description: Origin country code. Default KR.
+                  example: KR
+                destination:
+                  type: string
+                  description: Destination country code. Default BG.
+                  example: BG
+                car_type:
+                  type: string
+                  description: Default standard.
+                  example: standard
+                currency:
+                  type: string
+                  description: Echoed back in the response. Default EUR.
+                  example: EUR
+                site_name:
+                  type: string
+                  description: 'Source whose fee model to price against: encar, openlane, auto1, schadeautos, copart or ecarstrade. Omitted, it defaults to encar when origin is KR and otherwise falls back to a generic model that is not what any of our own listings are priced with. japanauction has no profile and takes the generic path too. Send it whenever you know it.'
+                  example: ecarstrade
+                db_tax:
+                  type: number
+                  description: Optional auction-fee and delivery overrides, when you already hold those figures.
+                  example: '450'
+                db_delivery:
+                  type: number
+                  description: Optional auction-fee and delivery overrides, when you already hold those figures.
+                  example: '450'
+                is_margin:
+                  type: boolean
+                  description: 'eCarsTrade only: whether the car sells under the VAT margin scheme, which changes whether VAT is added. Default false. The vehicle own value is published as the is_margin field on the detail endpoints.'
+                  example: 'false'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                currency: EUR
+                breakdown:
+                  lot_price: 15000
+                  auction_fee: 0
+                  trucking: 0
+                  shipping: 1800
+                  our_fee: 700
+                  subtotal_customs_value: 16800
+                  duty_rate: 10
+                  duty_amount: 1680
+                  vat_rate: 20
+                  vat_amount: 3696
+                  customs_agency: 800
+                  custom_clearance_total: 6176
+                  estimated_total: 23676
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

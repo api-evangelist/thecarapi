@@ -1,0 +1,330 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Health & contract API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Health & contract
+  description: Check service dependencies and inspect the API index.
+  externalDocs:
+    url: https://thecarapi.com/docs/ops
+paths:
+  /api/health/live:
+    get:
+      operationId: get_api_health_live
+      summary: Unauthenticated process liveness probe
+      description: 'Unauthenticated process liveness probe.
+
+
+        One of only two endpoints in the whole API that need no key. Always 200 while the process is up. This is the right target for an uptime monitor — it says nothing about whether the data behind the API is reachable, which is what /api/health/ready and /api/health are for.'
+      tags:
+      - Health & contract
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: none — no API key required
+      x-examples:
+      - GET https://api.thecarapi.com/api/health/live
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                status: ok
+                service: car-details-api
+                contract_version: '2026-08-19'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/health/ready:
+    get:
+      operationId: get_api_health_ready
+      summary: Unauthenticated readiness probe — is the data layer reachable?
+      description: 'Unauthenticated readiness probe — is the data layer reachable?
+
+
+        Unauthenticated readiness: 200 {"status": "ready"} once the service can reach its database, 503 {"status": "not_ready"} until then. Use live for a liveness probe and ready for a readiness probe; neither consumes quota. No key required.'
+      tags:
+      - Health & contract
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: none — no API key required
+      x-examples:
+      - GET https://api.thecarapi.com/api/health/ready
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                status: ready
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/health:
+    get:
+      operationId: get_api_health
+      summary: Return service, data-feed and schema health
+      description: 'Return service, data-feed and schema health.
+
+
+        status is healthy or degraded. A degraded service still answers 200, with the reason under schema_findings — so alert on the status field, not on the HTTP code. typesense.healthy being false is what turns free-text ?search= into a plain database match rather than a full-text one, and is the usual explanation for a text search returning less than you expected.'
+      tags:
+      - Health & contract
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: ops
+      x-examples:
+      - GET https://api.thecarapi.com/api/health
+      - 'curl -H "Authorization: Bearer $API_KEY" "https://api.thecarapi.com/api/health"'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                status: healthy
+                service: car-details-api
+                worker_pid: 41
+                contract_version: '2026-08-19'
+                typesense:
+                  enabled: true
+                  healthy: true
+                public_auction_feed:
+                  enabled: true
+                  fresh: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/contract:
+    get:
+      operationId: get_api_contract
+      summary: Machine-readable schema catalog, pagination limits, and live-price capability
+      description: 'Machine-readable schema catalog, pagination limits, and live-price capability.
+
+
+        Read this once at startup. It is the correct answer to “does this deployment support live prices, and for which sources” — a missing live_price block on a detail response is not an error and never distinguishes the two cases on its own. This response carries no envelope metadata — its own version field is the contract version.
+
+
+        Response fields — version (string): The contract version this deployment serves. Matches the contract_version on response bodies that carry one. This response itself carries no envelope metadata — version is the contract version. schemas (object): Required and optional keys per response shape. This is the authoritative machine-readable schema; prefer it to hardcoding field lists. As of 2026-08-19, auction_detail.optional lists vault_gallery and brands_models_facets.optional lists errors — gate on those rather than comparing version strings. pagination.max_limit (integer): The page-size ceiling. Clamp your own paging to it rather than discovering it by being clamped. pagination.max_offset (integer): The offset cap on the capped endpoints (catalog, top-offers, theparking listings). Search and listVehicles have no offset cap. live_prices (object): Whether this deployment reads a running auction’s bid when its detail is requested, which sources it covers, and how long a refreshed price stays current ({ enabled, sites, ttl_seconds }). The values are illustrative, not guaranteed — read them at startup rather than hardcoding them. The whole block is absent where the feature does not exist at all, and that absence is the only way to tell “live prices are unavailable” from “this car has none right now”, because both look identical in a detail response.'
+      tags:
+      - Health & contract
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: ops
+      x-examples:
+      - GET https://api.thecarapi.com/api/contract
+      - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/contract"'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                version: '2026-08-19'
+                schemas:
+                  search_result_card:
+                    required: []
+                    optional: []
+                pagination:
+                  max_limit: 100
+                  max_offset: 5000
+                live_prices:
+                  enabled: true
+                  sites:
+                  - openlane
+                  - ecarstrade
+                  ttl_seconds: 120
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /:
+    get:
+      operationId: get_
+      summary: Return the human-readable API index and service version
+      description: 'Return the human-readable API index and service version.
+
+
+        A smoke-test target, not a discovery document — this reference and GET /api/contract are what describe the surface.'
+      tags:
+      - Health & contract
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: ops
+      x-examples:
+      - GET https://api.thecarapi.com/
+      - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/"'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                service: Car Details API
+                version: 2.0.0
+                endpoints:
+                  GET /api/health: Health check endpoint
+                typesense:
+                  enabled: true
+                  running: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

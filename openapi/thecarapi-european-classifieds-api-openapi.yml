@@ -1,0 +1,462 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public European classifieds API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: European classifieds
+  description: 'A retail price surface of roughly 9.8M live listings gathered from 681 origin portals — national classifieds sites, dealer groups and manufacturer stock pages — across 39 European countries: mobile.de, kleinanzeigen.de, autoscout24, leboncoin.fr, lacentrale.fr, autosupermarket.it, njuskalo.hr and hundreds more.'
+  externalDocs:
+    url: https://thecarapi.com/docs/theparking
+paths:
+  /api/theparking/listings:
+    get:
+      operationId: get_api_theparking_listings
+      summary: Query retail classifieds aggregated from portals across Europe
+      description: 'Query retail classifieds aggregated from portals across Europe.
+
+
+        Every multi-value filter is OR within the parameter and AND across parameters — country=de,at&brand=BMW,Audi means (DE or AT) and (BMW or Audi). A non-numeric value on a numeric parameter is a 400, not a dropped filter. Match values exactly: country, source and source_exclude are case-insensitive; brand, model, fuel, gearbox and seller are compared as stored, so take the spellings from /api/theparking/facets rather than typing them. An unknown value is never an error here, it simply matches nothing. Counting is bounded rather than exhaustive on a feed this size: read total together with total_capped and total_unavailable, or skip it with include_total=false. Responses are served with Cache-Control: public, max-age=60 and no ETag, so conditional requests do not help here — include_total=false is the lever that does. There is no detail endpoint for these rows: those 23 keys are the whole record. Returns 503 while the dataset has not been built yet.
+
+
+        Response fields — reference_id (string): Stable identity for the listing, prefixed tp-. Use it to de-duplicate across polls. title (string): Listing headline as published by the origin portal. brand / model / engine (string): Brand and model as published, plus the engine or trim string when the portal supplies one. year (integer): Registration year. price_eur (number): Retail asking price in EUR. This is an asking price, not a transaction price. mileage_km (integer): Odometer reading in kilometres. fuel_norm (string): Normalized fuel, e.g. diesel, petrol, electric, hybrid. Matches the fuel filter vocabulary. gearbox_norm (string): Normalized gearbox, e.g. automatic, manual. Matches the gearbox filter vocabulary. colour (string): Exterior colour as published. doors (string): Door count as published by the portal. country / country_code (string): Country the car is listed in — display name and lower-case code. country_code is what the country filter accepts. region (string): Sub-national region or state when the portal publishes one. seller_type (string): dealer or private. The single most useful axis for separating trade from retail asking prices. source_site (string): Origin portal the listing came from, e.g. mobile.de. Matches the source / source_exclude filter vocabulary, ~681 values wide. This is the attribution that makes a country figure readable — half of all German inventory is one portal. photo_count (integer): How many photos the origin listing carries. Only one thumbnail is exposed here. offer_url (string): Deep link out to the listing, routed through the aggregator that indexes it — the URL is a theparking.eu one, not a direct link on the origin portal. Read source_site, not this URL, to know which portal the listing belongs to. image_url (string): Single remote thumbnail on the aggregator’s own CDN. Not copied into our image vault — treat it as a hotlink that disappears with the listing. published (date): Date the origin portal published the listing. first_seen_at / last_seen_at (timestamp): When our sweep first and most recently observed the listing. Use last_seen_at to judge staleness. total / limit / offset / total_pages (integer): Standard pagination envelope for the matching set. total is exact for ordinary filters, and null when total_unavailable is true. total_capped (boolean): True when counting stopped at 100,000. Read total as “100,000+” and page by offset rather than trusting total_pages. An unfiltered total is precomputed and never capped. total_unavailable (boolean): True when total is null because the count did not finish inside its budget — typically a q= search or a rare source. The listings themselves are complete and correct; only the count is missing, and the verdict is cached for 5 minutes.'
+      tags:
+      - European classifieds
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: theparking
+      x-examples:
+      - GET https://api.thecarapi.com/api/theparking/listings?country=de,at&brand=BMW&price_to=15000
+      - GET https://api.thecarapi.com/api/theparking/listings?seller=dealer&source=mobile.de&sort=price_low&with_photo=true
+      - GET https://api.thecarapi.com/api/theparking/listings?country=de&source_exclude=mobile.de,kleinanzeigen.de&include_total=false
+      parameters:
+      - name: country
+        in: query
+        required: false
+        description: 'Comma-separated country codes, case-insensitive. Value comes from: /api/theparking/facets -> countries[].value'
+        schema:
+          type: string
+        example: de,at
+      - name: brand
+        in: query
+        required: false
+        description: 'Comma-separated brands, exact as published. Compared as stored — case-sensitive. bmw matches nothing where BMW matches. Take the spelling from the facets endpoint. Value comes from: /api/theparking/facets -> facets.brands[].value'
+        schema:
+          type: string
+        example: BMW,Audi
+      - name: model
+        in: query
+        required: false
+        description: 'Comma-separated models. Compared as stored — case-sensitive. Value comes from: /api/theparking/models?brand=BMW -> models[].value'
+        schema:
+          type: string
+        example: 3 Series
+      - name: fuel
+        in: query
+        required: false
+        description: 'Comma-separated normalized fuels. Exact, case-sensitive. Value comes from: /api/theparking/facets -> facets.fuels[].value'
+        schema:
+          type: string
+        example: diesel
+      - name: gearbox
+        in: query
+        required: false
+        description: 'Comma-separated normalized gearboxes. Exact, case-sensitive. Value comes from: /api/theparking/facets -> facets.gearboxes[].value'
+        schema:
+          type: string
+        example: automatic
+      - name: seller
+        in: query
+        required: false
+        description: 'Comma-separated seller types, such as dealer or private. Exact, case-sensitive. Value comes from: /api/theparking/facets -> facets.sellers[].value'
+        schema:
+          type: string
+        example: dealer
+      - name: source
+        in: query
+        required: false
+        description: 'Comma-separated origin portals, case-insensitive. Unlike site on the auction side, an unrecognised portal is not an error — this vocabulary is drawn from the data itself rather than fixed, so an unknown value simply matches nothing. Value comes from: /api/theparking/facets -> sources[].value'
+        schema:
+          type: string
+        example: mobile.de
+      - name: source_exclude
+        in: query
+        required: false
+        description: 'Comma-separated origin portals to leave out, case-insensitive. With ~681 portals in the vocabulary this is the only practical way to say “everything but”. A listing with no recorded portal survives an exclusion. Value comes from: /api/theparking/facets -> sources[].value'
+        schema:
+          type: string
+        example: mobile.de
+      - name: price_from
+        in: query
+        required: false
+        description: 'EUR bounds. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '5000'
+      - name: price_to
+        in: query
+        required: false
+        description: 'EUR bounds. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '5000'
+      - name: year_from
+        in: query
+        required: false
+        description: 'Year bounds. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2016'
+      - name: year_to
+        in: query
+        required: false
+        description: 'Year bounds. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2016'
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage bounds. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage bounds. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: q
+        in: query
+        required: false
+        description: 'Case-insensitive substring match on the listing title or its description. The description itself is not returned, so a match can look unexplained — it is text you cannot see. Rare q values are also the usual cause of total_unavailable. Value comes from: Free text entered by your user.'
+        schema:
+          type: string
+        example: touring
+      - name: with_photo
+        in: query
+        required: false
+        description: 'Only listings that carry a thumbnail. Value comes from: Your filter choice.'
+        schema:
+          type: boolean
+        example: 'true'
+      - name: sort
+        in: query
+        required: false
+        description: 'Default newest. Value comes from: Choose newest, price_low, price_high, year_new, year_old, or mileage_low.'
+        schema:
+          type: string
+        example: price_low
+      - name: limit
+        in: query
+        required: false
+        description: 'Or page_size / page. Default 50, max 100, offset capped at 5000. This envelope carries total, limit, offset and total_pages only — no page, page_size or max_page. Page by offset. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '50'
+      - name: offset
+        in: query
+        required: false
+        description: 'Or page_size / page. Default 50, max 100, offset capped at 5000. This envelope carries total, limit, offset and total_pages only — no page, page_size or max_page. Page by offset. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '50'
+      - name: include_total
+        in: query
+        required: false
+        description: 'Default true. Pass false to skip the match count entirely — total comes back null and the request is markedly faster. Value comes from: Your pagination strategy.'
+        schema:
+          type: boolean
+        example: 'false'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                listings:
+                - reference_id: tp-91744022
+                  title: BMW 320d Touring
+                  brand: BMW
+                  model: 3 Series
+                  engine: 320d
+                  year: 2016
+                  price_eur: 12500.5
+                  mileage_km: 180000
+                  fuel_norm: diesel
+                  gearbox_norm: automatic
+                  colour: black
+                  doors: '5'
+                  country: Germany
+                  country_code: de
+                  region: Bayern
+                  seller_type: dealer
+                  source_site: mobile.de
+                  photo_count: 12
+                  offer_url: https://www.theparking.eu/...
+                  image_url: https://img.leparking.fr/...
+                  published: '2026-07-30'
+                  first_seen_at: '2026-07-30T04:11:02'
+                  last_seen_at: '2026-08-05T04:09:55'
+                total: 4412
+                total_capped: false
+                total_unavailable: false
+                limit: 50
+                offset: 0
+                total_pages: 89
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/theparking/facets:
+    get:
+      operationId: get_api_theparking_facets
+      summary: Counted filter vocabulary for the classifieds dataset
+      description: 'Counted filter vocabulary for the classifieds dataset.
+
+
+        Takes no filters — it always describes the whole feed. This is the discovery endpoint for every other classifieds filter: always build selects from here rather than hard-coding values, because brand/model/fuel/gearbox/seller are compared case-sensitively. The default trim of 50 matters most for sources (~680 origin portals); value_counts.sources tells you how many exist and limit=0 returns them all. The vocabulary changes only when the feed is rebuilt, so it is cached for an hour and served with Cache-Control: public, max-age=600. One cached vocabulary answers every limit, so asking for limit=0 once and trimming client-side costs the same as asking for limit=10. Returns 503 while the dataset has not been built yet.
+
+
+        Response fields — facets.countries / brands / fuels / gearboxes / sellers / sources ({value, count}[]): Each dimension is a list of {value, count}, most common first, nested under the facets key rather than at the top level. The values are exactly what the listings feed’s filters match on, so copy them verbatim: brands, fuels, gearboxes and sellers are compared case-sensitively downstream. facets.value_counts. (integer): How many distinct values that dimension really has, before limit trimmed it. Check value_counts.sources against the length of sources to know whether you are looking at all of them. facets.totals.total (integer): Listings in the feed. facets.totals.total_capped (boolean): True when counting stopped at 100,000 — read total as "100,000+". facets.totals.price_min / price_max / year_min / year_max (number | integer): EUR and year bounds across the feed, for sizing sliders.'
+      tags:
+      - European classifieds
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: theparking
+      x-examples:
+      - GET https://api.thecarapi.com/api/theparking/facets
+      - GET https://api.thecarapi.com/api/theparking/facets?limit=0
+      - 'curl -H "X-API-Key: $API_KEY" "https://api.thecarapi.com/api/theparking/facets"'
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        description: 'Values returned per dimension, default 50. 0 returns all of them — the only way to get the full 681-portal sources list. Value comes from: How many values your picker can hold.'
+        schema:
+          type: integer
+        example: '0'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                facets:
+                  countries:
+                  - value: de
+                    count: 1840221
+                  brands:
+                  - value: BMW
+                    count: 402118
+                  fuels:
+                  - value: diesel
+                    count: 4110882
+                  gearboxes:
+                  - value: manual
+                    count: 5233901
+                  sellers:
+                  - value: dealer
+                    count: 8901233
+                  sources:
+                  - value: mobile.de
+                    count: 913442
+                  value_counts:
+                    countries: 41
+                    brands: 128
+                    fuels: 7
+                    gearboxes: 3
+                    sellers: 2
+                    sources: 683
+                  totals:
+                    total: 9714882
+                    total_capped: false
+                    price_min: 50
+                    price_max: 4500000
+                    year_min: 1920
+                    year_max: 2027
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/theparking/models:
+    get:
+      operationId: get_api_theparking_models
+      summary: List models available for one or more brands
+      description: 'List models available for one or more brands.
+
+
+        brand is required — calling without it returns 400. Because brands are published verbatim by each portal, always take the brand value from /api/theparking/facets rather than typing it. Cached for 600 seconds. Returns 503 while the dataset has not been built yet.
+
+
+        Response fields — models ({value, count}[]): Model names available for the requested brands, most common first, capped at 400. value goes straight back into the model filter on /api/theparking/listings.'
+      tags:
+      - European classifieds
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: theparking
+      x-examples:
+      - GET https://api.thecarapi.com/api/theparking/models?brand=BMW
+      - GET https://api.thecarapi.com/api/theparking/models?brand=BMW,Audi
+      parameters:
+      - name: brand
+        in: query
+        required: true
+        description: 'Comma-separated brand list. Required. Matched exactly and case-sensitively, like the same parameter on the listings feed — pass the spellings from the brands facet. Value comes from: /api/theparking/facets -> facets.brands[].value'
+        schema:
+          type: string
+        example: BMW,Audi
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                models:
+                - value: 3 Series
+                  count: 8841
+                - value: 5 Series
+                  count: 6002
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

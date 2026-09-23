@@ -1,0 +1,289 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Top offers API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Top offers
+  description: Live auctions our pipeline judged to be priced below their market reference. Same deals as /api/search?sort=top_offers, but each card additionally carries the reference the verdict was made against.
+  externalDocs:
+    url: https://thecarapi.com/docs/top-offers
+paths:
+  /api/top-offers:
+    get:
+      operationId: get_api_top_offers
+      summary: Feed of auctions priced below their market reference, newest comparison first
+      description: 'Feed of auctions priced below their market reference, newest comparison first.
+
+
+        A car qualifies only when its saving clears a continuous, reference-quality-aware bar — wider price spread, thinner evidence, and slower-selling models all raise it — so this is a shortlist, not everything below average. Rows leave the feed the moment the auction ends, so total shrinks through the day and grows again after each comparison run. The comparable’s own listing URL and identity are not exposed. A non-numeric value on a numeric parameter is a 400, not a dropped filter. Responses are cached for 60 seconds and served with an ETag.
+
+
+        Response fields — results[] (object[]): A standard search result card plus the top-offer fields below. One difference from a search card: no image annotations. These rows carry thumbnail_url as stored, but not served_thumbnail_url, not images[], and not image_status / image_source. Fetch photos from /api/auction/{site}/{id} (vault_gallery) or /api/auction-images. is_top_offer (boolean): Always true on this feed. Also present on /api/search cards. top_offer_savings (number): Absolute EUR saving against the market reference. top_offer_savings_pct (number): Saving as a percentage of the reference price. Default sort key. market_reference.price_eur (number): The reference price this car was measured against. market_reference.mileage (integer): The reference mileage, so you can judge whether the comparison is like-for-like. market_reference.km_difference (integer): This car’s mileage minus the reference. Negative means this car has done fewer kilometres. market_reference.explanation (string): The rule that admitted this car to the feed, in words — e.g. the minimum EUR saving it had to clear.'
+      tags:
+      - Top offers
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: top-offers
+      x-examples:
+      - GET https://api.thecarapi.com/api/top-offers?site=openlane&min_savings_pct=20&limit=24
+      - GET https://api.thecarapi.com/api/top-offers?brand=BMW&country=DE&sort=savings&page=2&page_size=20
+      parameters:
+      - name: site
+        in: query
+        required: false
+        description: 'Comma-separated source slugs. An unknown value returns 400. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: ecarstrade
+      - name: site_exclude
+        in: query
+        required: false
+        description: 'Comma-separated source slugs to leave out. Same rules as on /api/search. Value comes from: /api/sites -> sites[].name'
+        schema:
+          type: string
+        example: copart
+      - name: steering
+        in: query
+        required: false
+        description: 'Left- or right-hand drive, in any of the spellings /api/search accepts. Value comes from: left | lhd | left-hand | left_hand, or right | rhd | right-hand | right_hand — any other value is a 400.'
+        schema:
+          type: string
+        example: left
+      - name: brand
+        in: query
+        required: false
+        description: 'Exact clean_make, case-insensitive. Value comes from: /api/search -> results[].clean_make'
+        schema:
+          type: string
+        example: BMW
+      - name: model
+        in: query
+        required: false
+        description: 'Exact clean_model, case-insensitive. Value comes from: /api/search -> results[].clean_model'
+        schema:
+          type: string
+        example: 3 Series
+      - name: country
+        in: query
+        required: false
+        description: 'Vehicle country code, case-insensitive, matched exactly. Unlike /api/search, the europe pseudo-country is not supported here — it would match nothing. Pass ISO codes. Value comes from: /api/countries -> country_details[].code'
+        schema:
+          type: string
+        example: DE
+      - name: year_from
+        in: query
+        required: false
+        description: 'First-registration year bounds. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2018'
+      - name: year_to
+        in: query
+        required: false
+        description: 'First-registration year bounds. Value comes from: Year bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '2018'
+      - name: kilometers_from
+        in: query
+        required: false
+        description: 'Mileage bounds. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: kilometers_to
+        in: query
+        required: false
+        description: 'Mileage bounds. Value comes from: Mileage bounds chosen by your user.'
+        schema:
+          type: integer
+        example: '0'
+      - name: price_from
+        in: query
+        required: false
+        description: 'Public EUR price bounds. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '5000'
+      - name: price_to
+        in: query
+        required: false
+        description: 'Public EUR price bounds. Value comes from: EUR budget chosen by your user.'
+        schema:
+          type: integer
+        example: '5000'
+      - name: min_savings_pct
+        in: query
+        required: false
+        description: 'Only offers saving at least this percentage. Value comes from: Threshold chosen by your application.'
+        schema:
+          type: integer
+        example: '20'
+      - name: sort
+        in: query
+        required: false
+        description: 'Default savings_pct. An unknown value is a 400 listing the valid values. Value comes from: Choose savings_pct, savings, price_low, price_high, or newest.'
+        schema:
+          type: string
+        example: savings_pct
+      - name: limit
+        in: query
+        required: false
+        description: 'Or page_size / page. Default 50, max 100, offset capped at 5000. This envelope carries total, limit, offset and total_pages only — no page, page_size or max_page. Page by offset. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '24'
+      - name: offset
+        in: query
+        required: false
+        description: 'Or page_size / page. Default 50, max 100, offset capped at 5000. This envelope carries total, limit, offset and total_pages only — no page, page_size or max_page. Page by offset. Value comes from: Pagination state in your application.'
+        schema:
+          type: integer
+        example: '24'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                results:
+                - auction_id: 8842711
+                  site_name: openlane
+                  car_name_en: BMW 320d Touring
+                  clean_make: BMW
+                  clean_model: 3 Series
+                  public_price_eur: 9000
+                  is_top_offer: true
+                  top_offer_savings: 2500
+                  top_offer_savings_pct: 21.7
+                  market_reference:
+                    price_eur: 11500
+                    mileage: 165000
+                    km_difference: -15000
+                    explanation: 'Rule: this car must save at least 1,800 EUR — ...'
+                total: 318
+                limit: 24
+                offset: 0
+                total_pages: 14
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

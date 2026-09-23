@@ -1,0 +1,218 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public SEO helpers API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: SEO helpers
+  description: Build popular landing pages and resolve brand/model URL slugs.
+  externalDocs:
+    url: https://thecarapi.com/docs/seo
+paths:
+  /api/seo/popular-searches:
+    get:
+      operationId: get_api_seo_popular_searches
+      summary: List the most common live brand/model searches
+      description: List the most common live brand/model searches.
+      tags:
+      - SEO helpers
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: seo
+      x-examples:
+      - GET https://api.thecarapi.com/api/seo/popular-searches
+      - GET https://api.thecarapi.com/api/seo/popular-searches?limit=50
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        description: 'Number of results from 1 to 200. Default 20. Value comes from: Result count chosen by your application.'
+        schema:
+          type: integer
+        example: '50'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                results:
+                - brand: BMW
+                  model: 320d
+                  brand_slug: bmw
+                  model_slug: 320d
+                  count: 210
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/seo/brand-model-from-slug:
+    get:
+      operationId: get_api_seo_brand_model_from_slug
+      summary: Resolve brand and model slugs to their canonical display names
+      description: 'Resolve brand and model slugs to their canonical display names.
+
+
+        Returns 404 unless the slug pair identifies exactly one live brand/model combination.'
+      tags:
+      - SEO helpers
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: seo
+      x-examples:
+      - GET https://api.thecarapi.com/api/seo/brand-model-from-slug?brand_slug=bmw&model_slug=320d
+      - GET https://api.thecarapi.com/api/seo/brand-model-from-slug?brand_slug=volvo&model_slug=xc60
+      parameters:
+      - name: brand_slug
+        in: query
+        required: true
+        description: 'Brand slug, such as bmw. Value comes from: /api/seo/popular-searches -> results[].brand_slug'
+        schema:
+          type: string
+        example: bmw
+      - name: model_slug
+        in: query
+        required: true
+        description: 'Model slug, such as 320d. Value comes from: /api/seo/popular-searches -> results[].model_slug'
+        schema:
+          type: string
+        example: 320d
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                brand: BMW
+                model: 320d
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs

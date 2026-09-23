@@ -1,0 +1,394 @@
+openapi: 3.2.0
+info:
+  title: TheCarApi — Public Auctions & history API
+  version: '2026-08-19'
+  summary: Multi-source vehicle auction inventory API
+  description: 'Normalized vehicle auction inventory from Auto1, OpenLane, Schadeautos, Copart Germany,
+
+    eCarsTrade, Encar and the Japanese auction houses, plus a European retail classifieds network.
+
+
+    A vehicle is addressed by the pair site_name + auction_id_str, for example encar/38112900.
+
+    Primary envelopes carry contract_version, request_id, server_time and data_updated_at; a handful of routes omit those.
+
+    Price fields are JSON numbers, never strings.
+
+
+    Full documentation: https://thecarapi.com/docs'
+  contact:
+    name: TheCarApi API support
+    email: api@thecarapi.com
+    url: https://thecarapi.com/contact
+  termsOfService: https://thecarapi.com/terms
+servers:
+- url: https://api.thecarapi.com
+  description: Production
+security:
+- apiKeyHeader: []
+- bearerAuth: []
+tags:
+- name: Auctions & history
+  description: Retrieve source-aware listing detail, galleries, price changes, and VIN history. A running openlane or ecarstrade auction has its bid read from the auction house at the moment you request the detail — nothing needs to be passed to enable it. Every other listing is served at its cycle price, refreshed at least every twelve hours.
+  externalDocs:
+    url: https://thecarapi.com/docs/auctions
+paths:
+  /api/auction/{site_slug}/{auction_id}:
+    get:
+      operationId: get_api_auction_site_slug_auction_id
+      summary: Canonical auction detail with private and bidder fields removed
+      description: Canonical auction detail with private and bidder fields removed.
+      tags:
+      - Auctions & history
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: auctions
+      x-examples:
+      - GET https://api.thecarapi.com/api/auction/encar/38112900
+      - GET https://api.thecarapi.com/api/auction/openlane/11125938
+      parameters:
+      - name: site_slug
+        in: path
+        required: true
+        description: 'Source name returned by /api/sites. Value comes from: /api/search -> results[].site_name'
+        schema:
+          type: string
+        example: encar
+      - name: auction_id
+        in: path
+        required: true
+        description: 'Integer auction database id. Value comes from: /api/search -> results[].auction_id'
+        schema:
+          type: integer
+        example: '38112900'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                auction:
+                  auction_id: 11409652
+                  site_name: openlane
+                  clean_make: BMW
+                  clean_model: 320d
+                  model_display: 320d M Sport
+                  registration_year: 2020
+                  mileage: 45000
+                  current_price: 25900
+                  current_final: 33566
+                  public_price_eur: 33926
+                  auction_end_at: '2026-08-20T10:00:00Z'
+                  images: []
+                  vault_gallery:
+                    images:
+                    - served_url: /image-vault/ab/cd/openlane_11409652_00_deadbeef.avif
+                      remote_url: https://cdn.example/photo_1.jpg
+                      image_status: ready
+                    count: 28
+                    pending: 0
+                  vehicle_details: {}
+                  car_identification: {}
+                  live_price:
+                    price: 25900
+                    currency: EUR
+                    source: openlane
+                    fetched_at: 1786659750
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/auction/{site_slug}/{auction_id}/price-history:
+    get:
+      operationId: get_api_auction_site_slug_auction_id_price_history
+      summary: Every recorded price movement for one listing, oldest first
+      description: 'Every recorded price movement for one listing, oldest first.
+
+
+        A row is written only when a price actually changed, so the series is the movement itself rather than a per-cycle sample — a lot whose price never moved has exactly one row. Capped at 5,000 events, oldest first. For auto1, source_auction_id is the alphanumeric batch id; for every other source it is the numeric auction id as text. The top-level source_auction_id mirrors the newest event. An unknown auction is not a 404: it answers 200 with history: [] and source_auction_id echoing the id you asked for, because "we hold no price movements for this lot" and "this lot does not exist" are the same absence here. Check /api/auction/{site}/{id} if you need to tell them apart. Served with Cache-Control: public, max-age=60. This response carries no envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — event_type (enum): Exactly three values: initial (the first prices we ever recorded for this lot), baseline (the state before the first observed change, written once so a series never starts mid-move), and change (a subsequent movement). There is no price_change value — a client matching on that has been discarding every event. changed_fields (string[]): Which price fields moved in this event. Always an array, empty on a baseline row. current_price / buy_now_price / start_price / final_price / current_final / buynow_final / public_price_eur (number | null): The full price snapshot as of observed_at. JSON numbers or null. currency_code_id (string): Currency of the source-side figures. observed_at (timestamp): When the change was observed. The field to plot against. created_at (timestamp): When the row was written. Within seconds of observed_at; not a second data point.'
+      tags:
+      - Auctions & history
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: auctions
+      x-examples:
+      - GET https://api.thecarapi.com/api/auction/encar/38112900/price-history
+      - GET https://api.thecarapi.com/api/auction/openlane/11125938/price-history
+      parameters:
+      - name: site_slug
+        in: path
+        required: true
+        description: 'Auction source slug. Value comes from: /api/search -> results[].site_name'
+        schema:
+          type: string
+        example: encar
+      - name: auction_id
+        in: path
+        required: true
+        description: 'Auction database id. Value comes from: /api/search -> results[].auction_id'
+        schema:
+          type: integer
+        example: '38112900'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                site: encar
+                auction_id: 38112900
+                source_auction_id: '38112900'
+                history:
+                - event_type: initial
+                  source_auction_id: '38112900'
+                  changed_fields:
+                  - current_price
+                  - public_price_eur
+                  current_price: 21500
+                  buy_now_price: null
+                  start_price: null
+                  final_price: null
+                  current_final: null
+                  buynow_final: null
+                  public_price_eur: 21500
+                  currency_code_id: EUR
+                  observed_at: '2026-07-10T08:00:00'
+                  created_at: '2026-07-10T08:00:05'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/auction-images/{site_slug}/{auction_id}:
+    get:
+      operationId: get_api_auction_images_site_slug_auction_id
+      summary: Ordered gallery metadata backed by the image vault.
+      description: 'Ordered gallery metadata backed by the image vault. Usually unnecessary — the same body rides on the auction detail response as vault_gallery.
+
+
+        You usually do not need this call: /api/auction/{site}/{id} embeds this same body as vault_gallery, so a detail page can be one request rather than two. This endpoint stays fully supported and is still the right one when you want the gallery on its own; both are served from a single cache entry, so they never disagree, and while pending is non-zero both carry max-age=10. Every entry carries a URL that works right now: served_url once the photo is stored on our CDN, remote_url until then. served_url and thumbnail are paths beginning /image-vault/… — join them to https://api.thecarapi.com. remote_url is always absolute. Load served_url directly and remote_url through an image proxy. /image-vault/* paths answer with a 302 to a pre-signed object URL rather than streaming bytes, so use a client that follows redirects — every mainstream one does by default, and the target object is immutable-cached. Stored photos are AVIF or WebP depending on what the source served — rely on the URL and content type, not the extension. An empty images array means nothing is stored yet; an invalid site returns 404.
+
+
+        Response fields — count (integer): How many photos this response carries. pending (integer): How many photos the auction still owes. Show placeholders for these instead of a silently short gallery. url (string): The best URL available right now — served_url once vaulted, remote_url until then. served_url (string): A path, not an absolute URL. It begins /image-vault/… and is relative to the API base, so join it: https://api.thecarapi.com + served_url. Load this directly once the photo is stored. remote_url (string): Always absolute — the source’s own URL. Load this through an image proxy until the photo is vaulted. image_status (enum): ready, pending, downloading, failed, blocked, or not_downloaded — but on this endpoint it is always ready, because only stored photos are listed at all. The other values appear on the image annotations attached to search cards, where a photo can still be in flight. failed and blocked mean the photo exhausted its retries and is not counted in pending, so a gallery can settle with pending: 0 and still be shorter than picture_count. image_source (enum): downloaded (in the vault) or proxied (still served from the source). index / is_primary (integer / boolean): Gallery order and which photo is the thumbnail. source_section (string): Section the source filed the photo under, e.g. exterior, interior, damage. width / height (integer): Pixel dimensions of the stored photo. servedUrl / thumbnailUrl / image_index (string | integer): camelCase and legacy twins of served_url, thumbnail and index, kept for older clients and always equal to their counterparts. Prefer the snake_case names — the twins may be retired. local_status / local_rel_path (string): local_status is the same value as image_status; local_rel_path is the vault path served_url is built from.'
+      tags:
+      - Auctions & history
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: auctions
+      x-examples:
+      - GET https://api.thecarapi.com/api/auction-images/encar/38112900
+      - GET https://api.thecarapi.com/api/auction-images/openlane/11125938
+      parameters:
+      - name: site_slug
+        in: path
+        required: true
+        description: 'Auction source slug. Value comes from: /api/search -> results[].site_name'
+        schema:
+          type: string
+        example: encar
+      - name: auction_id
+        in: path
+        required: true
+        description: 'Auction database id. Value comes from: /api/search -> results[].auction_id'
+        schema:
+          type: integer
+        example: '38112900'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                count: 1
+                pending: 12
+                images:
+                - url: https://cdn.example/photo_1.jpg
+                  remote_url: https://cdn.example/photo_1.jpg
+                  served_url: /image-vault/ab/cd/ecarstrade_7399555_00_deadbeef.avif
+                  thumbnail: /image-vault/ab/cd/ecarstrade_7399555_00_deadbeef.avif
+                  image_status: ready
+                  image_source: downloaded
+                  index: 0
+                  is_primary: true
+                  source_section: exterior
+                  width: 1024
+                  height: 768
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /api/vin/{vin}/history:
+    get:
+      operationId: get_api_vin_vin_history
+      summary: Look up a full VIN across current and archived auction records
+      description: 'Look up a full VIN across current and archived auction records.
+
+
+        Not enabled on a new key by default — ask for it. Returns up to 100 matches, newest first by the most recent of archived_at / last_seen_at / updated_at / created_at, deduplicated on (source, auction id) so one lot never appears twice. This is the endpoint that tells you a car has been through auction more than once — two rows for one VIN, months apart, with different mileages, is the pattern worth surfacing. A VIN that is not 17 valid characters is a 400; a valid VIN we have never seen answers 200 with match_count: 0. This response carries no envelope metadata — read X-Request-ID from the header.
+
+
+        Response fields — site_name / auction_id / source_auction_id (string | integer): Which source and lot. source_auction_id is the Auto1 batch id where one exists, otherwise the auction id as text. chassis_number (string): The VIN as the source published it (punctuation and case as stored). clean_make / clean_model / model_display (string): Normalized identity. date_first_registration / mileage (string | integer): Registration date and the mileage recorded on that appearance. current_price / buy_now_price / start_price / final_price / current_final / buynow_final / public_price_eur (number | null): The whole price block. JSON numbers or null. currency_code_id (string): Currency of the source-side figures. first_seen_at / last_seen_at / last_available_at / created_at / updated_at / archived_at (timestamp | null): Lifecycle. archived_at is null on a live row. is_active / offer_link (boolean | string): Whether the lot is still open, and its listing URL. archived (boolean): True when this appearance comes from the archive rather than live inventory.'
+      tags:
+      - Auctions & history
+      security:
+      - apiKeyHeader: []
+      - bearerAuth: []
+      x-scope: auctions
+      x-examples:
+      - GET https://api.thecarapi.com/api/vin/WBA8E9G50GNU12345/history
+      - GET https://api.thecarapi.com/api/vin/KNAB3811ALT123456/history
+      parameters:
+      - name: vin
+        in: path
+        required: true
+        description: 'Valid 17-character VIN. Matching ignores punctuation and case in the stored VIN, so a source that wrote it with separators still matches. Value comes from: /api/auction/{site}/{id} -> auction.chassis_number'
+        schema:
+          type: string
+        example: WBA8E9G50GNU12345
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                success: true
+                vin: WBA8E9G50GNU12345
+                match_count: 2
+                auctions:
+                - site_name: encar
+                  auction_id: 38112900
+                  clean_make: BMW
+                  clean_model: 320d
+                  mileage: 45000
+                  public_price_eur: 21500
+                  first_seen_at: '2026-06-01T00:00:00'
+                  last_seen_at: '2026-07-10T00:00:00'
+                  archived: false
+                  source_auction_id: '38112900'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    RateLimited:
+      description: Authentication lockout or quota exceeded. Honour Retry-After.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    NotFound:
+      description: Source-aware resource not found.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+externalDocs:
+  description: API reference
+  url: https://thecarapi.com/docs
