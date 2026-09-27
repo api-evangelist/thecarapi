@@ -256,8 +256,6 @@ apis:
   humanURL: https://thecarapi.com/docs
   baseURL: https://api.thecarapi.com
   tags:
-  - Search & Discovery
-  tags_raw:
   - Search and Discovery
   properties:
   - type: OpenAPI

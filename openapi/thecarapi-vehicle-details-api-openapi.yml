@@ -473,8 +473,8 @@ paths:
           $ref: '#/components/responses/RateLimited'
 components:
   responses:
-    Forbidden:
-      description: Revoked key, or scope, IP, or origin denial.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
       content:
         application/json:
           schema:
@@ -501,8 +501,8 @@ components:
               error:
                 type: string
                 description: Sanitized failure message.
-    BadRequest:
-      description: Invalid filter, pagination, source, parameter, or request body.
+    NotFound:
+      description: Source-aware resource not found.
       content:
         application/json:
           schema:
@@ -515,8 +515,8 @@ components:
               error:
                 type: string
                 description: Sanitized failure message.
-    NotFound:
-      description: Source-aware resource not found.
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
       content:
         application/json:
           schema:
