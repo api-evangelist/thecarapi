@@ -383,6 +383,20 @@ components:
               error:
                 type: string
                 description: Sanitized failure message.
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
     RateLimited:
       description: Authentication lockout or quota exceeded. Honour Retry-After.
       content:
@@ -399,20 +413,6 @@ components:
                 description: Sanitized failure message.
     NotFound:
       description: Source-aware resource not found.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                enum:
-                - false
-              error:
-                type: string
-                description: Sanitized failure message.
-    Forbidden:
-      description: Revoked key, or scope, IP, or origin denial.
       content:
         application/json:
           schema:
