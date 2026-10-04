@@ -247,22 +247,8 @@ paths:
           $ref: '#/components/responses/RateLimited'
 components:
   responses:
-    BadRequest:
-      description: Invalid filter, pagination, source, parameter, or request body.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              success:
-                type: boolean
-                enum:
-                - false
-              error:
-                type: string
-                description: Sanitized failure message.
-    Forbidden:
-      description: Revoked key, or scope, IP, or origin denial.
+    Unauthorized:
+      description: Missing, invalid, or expired API key.
       content:
         application/json:
           schema:
@@ -289,6 +275,20 @@ components:
               error:
                 type: string
                 description: Sanitized failure message.
+    BadRequest:
+      description: Invalid filter, pagination, source, parameter, or request body.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                enum:
+                - false
+              error:
+                type: string
+                description: Sanitized failure message.
     NotFound:
       description: Source-aware resource not found.
       content:
@@ -303,8 +303,8 @@ components:
               error:
                 type: string
                 description: Sanitized failure message.
-    Unauthorized:
-      description: Missing, invalid, or expired API key.
+    Forbidden:
+      description: Revoked key, or scope, IP, or origin denial.
       content:
         application/json:
           schema:
