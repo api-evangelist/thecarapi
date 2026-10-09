@@ -77,3 +77,29 @@ metering:
 notes:
   - No public self-serve checkout was found; every tier routes through https://thecarapi.com/contact.
   - No published free-forever tier — the free tier is a time/volume-limited evaluation key.
+x-canonical:
+  generated: '2026-10-08'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - free
+  - subscription
+  units: []
+  plans:
+  - name: Test
+    access: other
+    model: free
+    model_how: derived
+    units: []
+    periods: []
+  - name: Unlimited
+    access: other
+    model: subscription
+    model_how: derived
+    units: []
+    periods: []
+  - name: Custom
+    access: other
+    model: unstated
+    model_how: derived
+    units: []
+    periods: []
