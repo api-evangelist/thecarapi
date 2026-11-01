@@ -1,4 +1,4 @@
-# thecarapi-public-api
+# TheCarApi
 
 <!-- API-EVANGELIST-PROVENANCE:BEGIN -->
 > ### About this repository
@@ -64,4 +64,136 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-A multi-source vehicle auction inventory REST/JSON API aggregating live and archived auction listings and European retail classifieds. Provides search, facets, catalog, auction detail &amp; price history, VIN history, market intelligence, and import cost calculators. Fully specified via OpenAPI 3.1 with
+A multi-source vehicle auction inventory REST/JSON API aggregating live and archived auction listings and European retail classifieds. Provides search, facets, catalog, auction detail & price history, VIN history, market intelligence, and import cost calculators. Fully specified via OpenAPI 3.1 with Postman collection and agent-native documentation (llms.txt).
+
+**Areas:** Automotive · Vehicle Data · Car Auctions · Used Cars · Vehicle Inventory · Classifieds · Market Intelligence · Pricing · VIN · Image CDN · Europe · South Korea
+
+## TheCarApi on APIs.io
+
+Everything profiled for TheCarApi is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/thecarapi/](https://apis.io/providers/thecarapi/)** — or go straight to one of the APIs or properties below.
+
+### APIs (11)
+
+- [TheCarApi Auctions & history API](https://apis.io/apis/thecarapi/thecarapi-auctions-history-api/) — Retrieve source-aware listing detail, galleries, price changes, and VIN history. A running openlane or ecarstrade auction has its bid read from the auction…
+- [TheCarApi Catalog API](https://apis.io/apis/thecarapi/thecarapi-catalog-api/) — Build slug-addressable manufacturer and model-group navigation. All catalog list routes paginate with a default limit of 50 and are capped at offset 5000 —…
+- [TheCarApi European classifieds API](https://apis.io/apis/thecarapi/thecarapi-european-classifieds-api/) — A retail price surface of roughly 9.8M live listings gathered from 681 origin portals — national classifieds sites, dealer groups and manufacturer stock…
+- [TheCarApi Filter facets API](https://apis.io/apis/thecarapi/thecarapi-filter-facets-api/) — Discover live filter values and counts. Every facet endpoint accepts the search filters, so a facet describes whatever slice of inventory you are looking at…
+- [TheCarApi Health & contract API](https://apis.io/apis/thecarapi/thecarapi-health-contract-api/) — Check service dependencies and inspect the API index.
+- [TheCarApi Import calculator API](https://apis.io/apis/thecarapi/thecarapi-import-calculator-api/) — Estimate the landed cost of importing a vehicle. These are estimates, not a binding quote.
+- [TheCarApi Market intelligence API](https://apis.io/apis/thecarapi/thecarapi-market-intelligence-api/) — Precomputed price snapshots for a brand, model, and year window — one for the Bulgarian retail market, one for our own auction inventory. Scope: market.…
+- [TheCarApi SEO helpers API](https://apis.io/apis/thecarapi/thecarapi-seo-helpers-api/) — Build popular landing pages and resolve brand/model URL slugs.
+- [TheCarApi Top offers API](https://apis.io/apis/thecarapi/thecarapi-top-offers-api/) — Live auctions our pipeline judged to be priced below their market reference. Same deals as /api/search?sort=top_offers, but each card additionally carries…
+- [TheCarApi Vehicle details API](https://apis.io/apis/thecarapi/thecarapi-vehicle-details-api/) — Fetch a full source payload from cache or, when needed, from the upstream source.
+- [TheCarApi Search and Discovery API](https://apis.io/apis/thecarapi/thecarapi-search-and-discovery-api/) — Search live auction inventory, then resolve lightweight full-text matches. Ended lots are hidden by default; is_active=false / include_ended=true shows them…
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [thecarapi-mcp.yml](https://apis.io/servers/thecarapi/thecarapi-mcp-yml/)
+
+#### Overlays (1)
+
+OpenAPI overlays, including conversational phrasing for each operation.
+
+- [Thecarapi Openapi Overlay](https://apis.io/overlays/thecarapi/thecarapi-openapi-overlay/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Thecarapi Authentication](https://apis.io/security/thecarapi/thecarapi-authentication/)
+- [Thecarapi Domain Security](https://apis.io/security/thecarapi/thecarapi-domain-security/)
+
+#### OAuth scopes (1)
+
+The permissions the API asks for.
+
+- [Thecarapi Scopes](https://apis.io/scopes/thecarapi/thecarapi-scopes/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Thecarapi Plans Pricing](https://apis.io/plans/thecarapi/thecarapi-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Thecarapi Rate Limits](https://apis.io/rate-limits/thecarapi/thecarapi-rate-limits/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://thecarapi.com/)
+- [Documentation](https://thecarapi.com/docs)
+- [Getting started](https://thecarapi.com/docs)
+- [API reference](https://thecarapi.com/docs/thecarapi-api-reference.md)
+- [Pricing](https://thecarapi.com/pricing)
+- [Support](https://thecarapi.com/contact)
+- [Changelog](https://thecarapi.com/changelog)
+- [Blog](https://thecarapi.com/blog)
+- [Terms of service](https://thecarapi.com/terms)
+- [Privacy policy](https://thecarapi.com/privacy)
+- [Status](https://thecarapi.com/status)
+
+## API Evangelist rating
+
+**Kin Score 58.2** — strong · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 73.2 |
+| Contract quality | 56.6 |
+| Contract governance | 8.3 |
+| Operational transparency | 63.2 |
+| Developer ergonomics | 63.7 |
+| Access clarity | 63.2 |
+
+**Agent readiness 26.2** — agent-aware
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | — |
+| Reversibility Documented | — |
+| MCP Server | — |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | documented (partial credit) |
+| OpenAPI Examples | verified |
+| Rate Limit Signal | documented (partial credit) |
+| Event Surface Described | — |
+| Agent Skills | derived (partial credit) |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | na |
+| Operation Distinctiveness | — |
+
+**Regulatory alignment 34.3** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/thecarapi/](https://apis.io/providers/thecarapi/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for TheCarApi: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/thecarapi/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
